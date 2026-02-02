@@ -1,0 +1,30 @@
+name: Deploy Worker + Sync KV
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Deploy the Worker using Cloudflare's official Wrangler action
+      - name: Deploy Worker
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
+
+      # Sync KV data from the repo into your bound KV namespace
+      - name: Upload KV targets.json
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: >
+            kv key put targets.json
+            --path kv/targets.json
+            --binding COSMOS_KV
+
