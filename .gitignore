@@ -6,3 +6,7 @@ dist/
 .impeccable/review/
 .playwright-mcp/
 .impeccable/questions/
+.spacefast/state.json
+/.spacefast-*
+.spacefast/.spacefast-*
+.spacefast/.space-link-*.tmp
