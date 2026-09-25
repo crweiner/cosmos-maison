@@ -43,6 +43,7 @@ uniform float u_alpha;
 uniform vec2 u_pointer;
 uniform float u_pull;
 uniform float u_warp;
+uniform float u_headroom;
 
 varying vec4 v_color;
 varying float v_kind;
@@ -71,11 +72,11 @@ void main() {
     if (u_pass == ${PASS_SPIKES}) {
       gl_PointSize = (26.0 + a_seed.z * 34.0) * u_dpr;
       vec3 c = mix(BLUEWHITE, GOLD_PALE, step(0.55, a_seed.w));
-      v_color = vec4(c, (0.55 + 0.45 * a_seed.z) * twinkle);
+      v_color = vec4(c, (0.55 + 0.45 * a_seed.z) * twinkle * u_headroom);
     } else {
       gl_PointSize = (0.8 + a_seed.z * a_seed.z * 2.2) * u_dpr;
       vec3 c = mix(WHITE, mix(BLUEWHITE, GOLD_PALE, a_seed.w), 0.6);
-      v_color = vec4(c, (0.25 + 0.75 * a_seed.z) * twinkle);
+      v_color = vec4(c, (0.25 + 0.75 * a_seed.z) * twinkle * u_headroom);
     }
     return;
   }
@@ -133,21 +134,21 @@ void main() {
     gl_PointSize = (40.0 + a_seed.w * 70.0) * u_dpr * sizeScale;
     vec3 c = mix(TEAL, GOLD, clamp(u_warmth * 0.5 + (1.0 - r) * 1.1 - 0.62, 0.0, 1.0));
     if (a_seed.w > 0.88) c = RUST;
-    float a = 0.06 * (1.0 - r * 0.6);
+    float a = 0.045 * (1.0 - r * 0.6);
     if (a_kind > 1.5) {
       // Bulge glow: a few broad, warm sprites around the core.
       gl_PointSize = (120.0 + a_seed.w * 160.0) * u_dpr * sizeScale;
       c = mix(GOLD, GOLD_PALE, a_seed.w);
       a = 0.04;
     }
-    v_color = vec4(c, a * u_alpha);
+    v_color = vec4(c, a * u_alpha * u_headroom);
     return;
   }
 
   if (u_pass == ${PASS_DUST}) {
     gl_PointSize = (16.0 + a_seed.w * 34.0) * u_dpr * sizeScale;
     // Absorption strength; lanes stay off the core rim and fade at the edge.
-    float a = 0.32 * smoothstep(0.22, 0.42, r) * (1.0 - smoothstep(0.7, 1.0, r));
+    float a = 0.32 * smoothstep(0.4, 0.62, r) * (1.0 - smoothstep(0.75, 1.0, r));
     v_color = vec4(0.62, 0.3, 0.2, a * u_alpha);
     return;
   }
@@ -176,7 +177,7 @@ void main() {
   gl_PointSize = size * u_dpr * sizeScale * (1.0 + u_warp * 0.6);
   // Fewer screen pixels per star means more overlap: dim to keep the core from clipping.
   float density = clamp(pow(u_scale / (1000.0 * u_dpr), 1.1), 0.42, 1.0);
-  v_color = vec4(c, a * u_alpha * density);
+  v_color = vec4(c, a * u_alpha * density * u_headroom);
 }
 `;
 
@@ -220,6 +221,29 @@ const QUAD_FRAG = /* glsl */ `
 precision mediump float;
 uniform vec4 u_color;
 void main() { gl_FragColor = u_color; }
+`;
+
+// Resolve: compress the additive light so dense cores roll off instead of clipping.
+const RESOLVE_VERT = /* glsl */ `
+attribute vec2 a_pos;
+varying vec2 v_uv;
+void main() {
+  v_uv = a_pos * 0.5 + 0.5;
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}
+`;
+
+const RESOLVE_FRAG = /* glsl */ `
+precision mediump float;
+uniform sampler2D u_tex;
+uniform float u_headroom;
+uniform vec3 u_void;
+varying vec2 v_uv;
+void main() {
+  vec3 c = texture2D(u_tex, v_uv).rgb / u_headroom;
+  vec3 mapped = 1.0 - exp(-c * 1.85);
+  gl_FragColor = vec4(u_void + (1.0 - u_void) * mapped, 1.0);
+}
 `;
 
 function rng(seed: number) {
@@ -296,16 +320,18 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     alpha: false,
     antialias: false,
     premultipliedAlpha: false,
-    preserveDrawingBuffer: true,
+    preserveDrawingBuffer: false,
     powerPreference: 'high-performance',
   });
   if (!gl) return null;
 
   let prog: WebGLProgram;
   let quad: WebGLProgram;
+  let resolveProg: WebGLProgram;
   try {
     prog = compile(gl, VERT, FRAG);
     quad = compile(gl, QUAD_VERT, QUAD_FRAG);
+    resolveProg = compile(gl, RESOLVE_VERT, RESOLVE_FRAG);
   } catch (err) {
     console.warn('[cosmos] galaxy disabled:', err);
     return null;
@@ -429,6 +455,40 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
   };
   const quadPos = gl.getAttribLocation(quad, 'a_pos');
   const quadColor = gl.getUniformLocation(quad, 'u_color');
+  const resolvePos = gl.getAttribLocation(resolveProg, 'a_pos');
+  const R = {
+    tex: gl.getUniformLocation(resolveProg, 'u_tex'),
+    headroom: gl.getUniformLocation(resolveProg, 'u_headroom'),
+    void: gl.getUniformLocation(resolveProg, 'u_void'),
+  };
+  const headroomLoc = gl.getUniformLocation(prog, 'u_headroom');
+
+  // Offscreen light buffer: half-float where supported, else 8-bit with headroom.
+  const halfExt = gl.getExtension('OES_texture_half_float');
+  gl.getExtension('EXT_color_buffer_half_float');
+  const lightTex = gl.createTexture()!;
+  const fbo = gl.createFramebuffer()!;
+  let texType: number = halfExt ? halfExt.HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
+  let headroom = 1;
+
+  function allocLight(w: number, h: number) {
+    gl!.bindTexture(gl!.TEXTURE_2D, lightTex);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, gl!.NEAREST);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MAG_FILTER, gl!.NEAREST);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_S, gl!.CLAMP_TO_EDGE);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_T, gl!.CLAMP_TO_EDGE);
+    gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA, w, h, 0, gl!.RGBA, texType, null);
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo);
+    gl!.framebufferTexture2D(gl!.FRAMEBUFFER, gl!.COLOR_ATTACHMENT0, gl!.TEXTURE_2D, lightTex, 0);
+    if (texType !== gl!.UNSIGNED_BYTE && gl!.checkFramebufferStatus(gl!.FRAMEBUFFER) !== gl!.FRAMEBUFFER_COMPLETE) {
+      texType = gl!.UNSIGNED_BYTE;
+      allocLight(w, h);
+      return;
+    }
+    // 8-bit targets store light at reduced intensity so highlights have room.
+    headroom = texType === gl!.UNSIGNED_BYTE ? 0.45 : 1;
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
+  }
 
   // --- State --------------------------------------------------------------
   let dpr = 1;
@@ -454,6 +514,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
       canvas.height = H;
     }
     gl!.viewport(0, 0, W, H);
+    allocLight(W, H);
   }
 
   function bindCloud(c: Buffers) {
@@ -510,7 +571,10 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
       x = cssW / 2;
       y = cssH * (stacked ? 0.82 : 0.8);
     } else if (scene.kind === 'hero') {
-      radius = stacked ? Math.max(cssW * 0.85, cssH * 0.4) : Math.min(frame * 0.5, cssH * 0.78);
+      // On ultra-wide screens the spiral grows with the width so it stays full-bleed.
+      radius = stacked
+        ? Math.max(cssW * 0.85, cssH * 0.4)
+        : Math.min(frame * 0.5, Math.max(cssH * 0.78, cssW * 0.4));
       if (stacked) {
         x = cssW * 0.62;
         y = cssH * 0.3;
@@ -567,6 +631,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     if (still) pull = 0;
 
     // Clear, or during the warp let the previous frame persist as a trail.
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo);
     gl!.useProgram(quad);
     gl!.enable(gl!.BLEND);
     gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA);
@@ -574,7 +639,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     gl!.enableVertexAttribArray(quadPos);
     gl!.vertexAttribPointer(quadPos, 2, gl!.FLOAT, false, 0, 0);
     const fade = warping ? Math.max(0.05, 1 - warp * 1.4) : 1;
-    gl!.uniform4f(quadColor, VOID[0], VOID[1], VOID[2], fade);
+    gl!.uniform4f(quadColor, 0, 0, 0, fade);
     gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
     gl!.disableVertexAttribArray(quadPos);
 
@@ -585,6 +650,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     gl!.uniform2f(U.pointer, pointer.x * dpr, pointer.y * dpr);
     gl!.uniform1f(U.pull, pull);
     gl!.uniform1f(U.warp, warp);
+    gl!.uniform1f(headroomLoc, headroom);
 
     // Backdrop field stars.
     gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
@@ -602,6 +668,21 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     gl!.uniform1f(U.alpha, 1);
     bindCloud(spikes);
     gl!.drawArrays(gl!.POINTS, 0, spikes.count);
+
+    // Resolve the light buffer to the screen through the tone curve.
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
+    gl!.disable(gl!.BLEND);
+    gl!.useProgram(resolveProg);
+    gl!.activeTexture(gl!.TEXTURE0);
+    gl!.bindTexture(gl!.TEXTURE_2D, lightTex);
+    gl!.uniform1i(R.tex, 0);
+    gl!.uniform1f(R.headroom, headroom);
+    gl!.uniform3f(R.void, VOID[0], VOID[1], VOID[2]);
+    gl!.bindBuffer(gl!.ARRAY_BUFFER, quadBuf);
+    gl!.enableVertexAttribArray(resolvePos);
+    gl!.vertexAttribPointer(resolvePos, 2, gl!.FLOAT, false, 0, 0);
+    gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
+    gl!.disableVertexAttribArray(resolvePos);
 
     // Keep animating unless motion is reduced; then draw only on change.
     if (!still || warping) schedule();

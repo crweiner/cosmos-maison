@@ -174,9 +174,8 @@ const first = brands[0];
   .masthead {
     position: absolute;
     top: 0;
-    left: 50%;
-    width: min(100%, 1920px);
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
     z-index: 5;
     padding: clamp(1.5rem, 2.6vw, 2.5rem) var(--gutter);
   }
@@ -189,8 +188,6 @@ const first = brands[0];
   .hero {
     position: relative;
     min-height: 100svh;
-    max-width: 1920px;
-    margin-inline: auto;
     display: grid;
     align-items: end;
     padding: 7rem var(--gutter) clamp(3.5rem, 9vh, 7rem);
@@ -262,7 +259,7 @@ const first = brands[0];
     z-index: 5;
     margin: 0;
     font-size: 0.6875rem;
-    color: var(--ink-faint);
+    color: var(--ink-soft);
     transform: translateY(40%);
     transition: opacity 400ms var(--ease-out);
     pointer-events: none;
