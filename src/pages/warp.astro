@@ -16,7 +16,13 @@ import { warpTargets } from '../data/brands';
     <p><a class="warp-page__home" href="/">Back to cosmos.maison</a></p>
   </main>
   <script is:inline define:vars={{ targets: warpTargets }}>
-    var pick = targets[Math.floor(Math.random() * targets.length)];
+    // Same rule as the home page: never land on the brand chosen last.
+    var last = null;
+    try { last = sessionStorage.getItem('cosmos:last-warp'); } catch (e) {}
+    var pool = targets.filter(function (t) { return t.url !== last; });
+    if (!pool.length) pool = targets;
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    try { sessionStorage.setItem('cosmos:last-warp', pick.url); } catch (e) {}
     window.location.replace(pick.url);
   </script>
 </Base>
