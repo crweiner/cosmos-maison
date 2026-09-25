@@ -30,8 +30,8 @@ This is the only place that presents Automattic's Cosmos brands together as one 
 ## Operating Context
 
 - Domain: cosmos.maison.
-- Brands with an exploration stop: **Tumblr, Day One, Pocket Casts, Me.sh, Spacefast**.
-- Existing random-redirect behavior (to be carried over): a weighted random choice from a target list (`kv/targets.json`). A weight of 0 or less disables a target. Responses use `Cache-Control: no-store` so every visit gets a fresh pick.
+- Cosmos brands (each has a stop and is a warp destination): **Tumblr** (tumblr.com), **Day One** (dayoneapp.com), **Pocket Casts** (pocketcasts.com), **Me.sh** (me.sh), **Spacefast** (spacefast.com), **Beeper** (beeper.com). The list lives in `src/data/brands.ts`.
+- Random warp: a uniform random pick in the browser that never repeats the brand chosen last in the same session. `/warp/` is a shareable random link, and it shows a plain list of destinations when JavaScript is off. Spacefast serves files only, so there is no server-side 302; a Spacefast Functions worker could add one later. The old Cloudflare Worker (weighted targets in KV) is retired.
 - Visitors use both pointer and touch devices.
 
 ## Capabilities and Constraints
@@ -40,9 +40,7 @@ This is the only place that presents Automattic's Cosmos brands together as one 
 - Supporting line: **"Explore our full galaxy of products"**.
 - Primary actions: **"Warp to a random Cosmos"** (sends the visitor straight to a random Cosmos brand's site) and **"I want to explore"** (scrolls down to the brand stops).
 - Each brand stop shows that brand's logo and an original haiku written for that company.
-- Open decision: which brands the random warp can land on. The current list is Pocket Casts, Day One and Beeper. The exploration stops are Tumblr, Day One, Pocket Casts, Me.sh and Spacefast. Beeper has no stop, and three stops aren't in the warp list yet.
-- Open decision: each brand's destination URL. Only pocketcasts.com, dayoneapp.com and beeper.com are confirmed in the repo.
-- Open decision: whether weighting carries over, and whether the random pick runs server-side (an Astro endpoint or middleware on Spacefast) or client-side. This depends on what Spacefast's runtime supports.
+- Each brand stop shows the official mark, the owner-approved haiku, and a link to the brand's site. Haikus use no em dashes (owner preference).
 
 ## Brand Commitments
 
@@ -57,8 +55,8 @@ Each brand's own name and logo must be used as that brand publishes them.
 
 ## Evidence on Hand
 
-- No brand logos in the repo yet. The official Tumblr, Day One, Pocket Casts, Me.sh and Spacefast marks have to be sourced, never redrawn or approximated.
-- The haikus will be newly written. They are original copy, not quotes or endorsements.
+- Official marks for all six brands are in `public/logos/`, sourced from the makers strip on spacefast.com (Automattic). Dark wordmark fills are reversed for the dark ground, and each SVG records its source. Never redraw or approximate them.
+- The six haikus are original copy, approved by the owner. They are not quotes or endorsements.
 - There are no testimonials, metrics or press, and none may be invented.
 
 ## Product Principles

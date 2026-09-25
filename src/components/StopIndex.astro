@@ -26,7 +26,8 @@ const { brands } = Astro.props;
   .index {
     position: fixed;
     top: 50%;
-    right: clamp(1.25rem, 2.4vw, 2.25rem);
+    /* Sits at the content frame's right edge, even on ultra-wide screens. */
+    right: max(clamp(1.25rem, 2.4vw, 2.25rem), calc((100vw - 1920px) / 2 + 2.25rem));
     z-index: 5;
     transform: translateY(-50%);
   }
@@ -93,19 +94,31 @@ const { brands } = Astro.props;
     background: var(--gold);
   }
 
-  /* Hidden during the opening view and on narrow screens. */
-  :global(html.at-top) .index:not(:focus-within) {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .index {
-    transition: opacity 400ms var(--ease-out);
-  }
-
+  /* Phones and short landscape screens: a compact strip of ticks only. */
   @media (max-width: 759px), (max-height: 520px) {
     .index {
+      right: 0.5rem;
+    }
+
+    ol {
+      gap: 0;
+    }
+
+    a {
+      min-height: 1.75rem;
+      padding-left: 0.75rem;
+    }
+
+    .index__label {
       display: none;
+    }
+
+    .index__tick {
+      width: 10px;
+    }
+
+    a[aria-current='true'] .index__tick {
+      width: 18px;
     }
   }
 </style>

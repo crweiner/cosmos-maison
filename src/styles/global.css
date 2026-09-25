@@ -217,7 +217,6 @@ svg {
 .btn--warp {
   background: var(--gold);
   color: var(--void);
-  box-shadow: 0 10px 30px -12px rgb(227 162 74 / 0.55);
 }
 
 .btn--warp:hover {

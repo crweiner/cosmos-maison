@@ -145,9 +145,10 @@ void main() {
   }
 
   if (u_pass == ${PASS_DUST}) {
-    gl_PointSize = (14.0 + a_seed.w * 30.0) * u_dpr * sizeScale;
-    float a = 0.16 * smoothstep(0.08, 0.3, r) * (1.0 - smoothstep(0.7, 1.0, r));
-    v_color = vec4(0.0, 0.0, 0.0, a * u_alpha);
+    gl_PointSize = (16.0 + a_seed.w * 34.0) * u_dpr * sizeScale;
+    // Absorption strength; lanes stay off the core rim and fade at the edge.
+    float a = 0.32 * smoothstep(0.22, 0.42, r) * (1.0 - smoothstep(0.7, 1.0, r));
+    v_color = vec4(0.62, 0.3, 0.2, a * u_alpha);
     return;
   }
 
@@ -162,13 +163,15 @@ void main() {
   } else if (a_kind > 1.5) {
     c = mix(GOLD, GOLD_PALE, a_seed.w);
     c = mix(c, WHITE, smoothstep(0.06, 0.0, r) * 0.6);
-    a = (0.14 + 0.2 * a_seed.w) * (0.45 + smoothstep(0.0, 0.2, r) * 0.55);
+    a = (0.08 + 0.12 * a_seed.w) * (0.35 + smoothstep(0.0, 0.22, r) * 0.65);
     size *= 0.8;
   } else {
     vec3 young = mix(TEAL_PALE, BLUEWHITE, a_seed.w);
     vec3 old = mix(GOLD, WHITE, a_seed.w * 0.6);
     float warm = clamp(u_warmth * 0.5 + (1.0 - r) * 0.7 - 0.45 + (a_seed.z - 0.5) * 0.5, 0.0, 1.0);
     c = mix(young, old, warm);
+    // Thin the inner disk so it rolls into the bulge instead of clipping.
+    a *= mix(0.3, 1.0, smoothstep(0.08, 0.4, r));
   }
   gl_PointSize = size * u_dpr * sizeScale * (1.0 + u_warp * 0.6);
   // Fewer screen pixels per star means more overlap: dim to keep the core from clipping.
@@ -195,7 +198,11 @@ void main() {
     float sx = exp(-abs(p.y) * 160.0) * (1.0 - smoothstep(0.0, 0.5, abs(p.x)));
     float sy = exp(-abs(p.x) * 160.0) * (1.0 - smoothstep(0.0, 0.5, abs(p.y)));
     a = core + halo + (sx + sy) * 0.55;
-  } else if (u_pass == ${PASS_GAS} || u_pass == ${PASS_DUST}) {
+  } else if (u_pass == ${PASS_DUST}) {
+    float k = v_color.a * exp(-d2 * 9.0) * (1.0 - smoothstep(0.2, 0.25, d2));
+    gl_FragColor = vec4(mix(vec3(1.0), v_color.rgb, k), 1.0);
+    return;
+  } else if (u_pass == ${PASS_GAS}) {
     a = exp(-d2 * 9.0) * (1.0 - smoothstep(0.2, 0.25, d2));
   } else {
     a = exp(-d2 * 22.0) * (1.0 - smoothstep(0.2, 0.25, d2));
@@ -490,9 +497,9 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     const cssW = W / dpr;
     const cssH = H / dpr;
     const stacked = isStacked(cssW, cssH);
-    // Content lives in a centred frame up to 1920px wide; galaxies align to it.
-    const frame = Math.min(cssW, 1920);
-    const left = (cssW - frame) / 2;
+    // Galaxies fill the whole viewport, ultra-wide included.
+    const frame = cssW;
+    const left = 0;
     const s = scene.shape;
     let x = left + s.x * frame;
     let y = s.y * cssH;
@@ -537,7 +544,8 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     bindCloud(gas);
     gl!.drawArrays(gl!.POINTS, 0, gas.count);
 
-    gl!.blendFunc(gl!.ZERO, gl!.ONE_MINUS_SRC_ALPHA);
+    // Multiply: dust tints and absorbs the light behind it, never punches black.
+    gl!.blendFunc(gl!.ZERO, gl!.SRC_COLOR);
     gl!.uniform1i(U.pass, PASS_DUST);
     bindCloud(dust);
     gl!.drawArrays(gl!.POINTS, 0, dust.count);
