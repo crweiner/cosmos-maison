@@ -1,0 +1,667 @@
+import type { GalaxyShape } from '../data/brands';
+
+/*
+ * Deep Field Plate renderer.
+ *
+ * One procedural spiral is generated once and redrawn with different shape
+ * uniforms for each scene (the opening galaxy plus one per brand stop). While
+ * the visitor scrolls, the two nearest scenes are drawn together with weights
+ * that crossfade between them. Stars near the pointer are pulled gently
+ * toward it and settle back. The warp opens the "shutter": the frame stops
+ * clearing, rotation accelerates, and every star leaves a long-exposure trail.
+ */
+
+const VOID: [number, number, number] = [0.016, 0.024, 0.043];
+
+// Pass ids, shared with the shaders.
+const PASS_GAS = 0;
+const PASS_DUST = 1;
+const PASS_STARS = 2;
+const PASS_FIELD = 3;
+const PASS_SPIKES = 4;
+
+const VERT = /* glsl */ `
+precision highp float;
+precision highp int;
+attribute float a_r;
+attribute vec4 a_seed;
+attribute float a_kind;
+
+uniform vec2 u_res;
+uniform float u_dpr;
+uniform float u_time;
+uniform int u_pass;
+uniform float u_arms;
+uniform float u_wind;
+uniform float u_tilt;
+uniform float u_angle;
+uniform float u_spin;
+uniform float u_warmth;
+uniform vec2 u_center;
+uniform float u_scale;
+uniform float u_alpha;
+uniform vec2 u_pointer;
+uniform float u_pull;
+uniform float u_warp;
+
+varying vec4 v_color;
+varying float v_kind;
+
+const vec3 TEAL = vec3(0.12, 0.66, 0.63);
+const vec3 TEAL_PALE = vec3(0.62, 0.90, 0.86);
+const vec3 GOLD = vec3(0.89, 0.64, 0.29);
+const vec3 GOLD_PALE = vec3(0.98, 0.86, 0.62);
+const vec3 RUST = vec3(0.78, 0.30, 0.22);
+const vec3 WHITE = vec3(0.96, 0.94, 0.90);
+const vec3 BLUEWHITE = vec3(0.78, 0.90, 0.98);
+
+void main() {
+  v_kind = a_kind;
+
+  // Field stars and spiked foreground stars live in screen space.
+  if (u_pass == ${PASS_FIELD} || u_pass == ${PASS_SPIKES}) {
+    vec2 p = a_seed.xy * u_res;
+    // A very slow drift so the backdrop is never frozen, stronger during warp.
+    p += (a_seed.xy - 0.5) * u_res * u_warp * u_warp * 0.35;
+    vec2 d = u_pointer - p;
+    p += d * 0.06 * u_pull * exp(-dot(d, d) / (220.0 * 220.0 * u_dpr * u_dpr));
+    gl_Position = vec4(p / u_res * 2.0 - 1.0, 0.0, 1.0);
+    gl_Position.y = -gl_Position.y;
+    float twinkle = 0.82 + 0.18 * sin(u_time * (0.6 + a_seed.w * 1.4) + a_seed.z * 40.0);
+    if (u_pass == ${PASS_SPIKES}) {
+      gl_PointSize = (26.0 + a_seed.z * 34.0) * u_dpr;
+      vec3 c = mix(BLUEWHITE, GOLD_PALE, step(0.55, a_seed.w));
+      v_color = vec4(c, (0.55 + 0.45 * a_seed.z) * twinkle);
+    } else {
+      gl_PointSize = (0.8 + a_seed.z * a_seed.z * 2.2) * u_dpr;
+      vec3 c = mix(WHITE, mix(BLUEWHITE, GOLD_PALE, a_seed.w), 0.6);
+      v_color = vec4(c, (0.25 + 0.75 * a_seed.z) * twinkle);
+    }
+    return;
+  }
+
+  float r = a_r;
+  float armIdx = floor(a_seed.x * u_arms);
+  float armBase = armIdx * 6.2831853 / u_arms;
+  float spiral = u_wind * log(1.0 + r * 5.0) * 1.25;
+
+  // a_kind: 0 = arm star, 1 = diffuse disk star, 2 = bulge star, 3 = HII knot.
+  float theta;
+  if (a_kind > 1.5 && a_kind < 2.5) {
+    theta = a_seed.y * 6.2831853;
+  } else if (a_kind > 0.5 && a_kind < 1.5) {
+    theta = a_seed.y * 6.2831853;
+  } else {
+    // Arm scatter narrows toward the rim and is tighter for HII knots and dust.
+    float spread = (a_kind > 2.5 ? 0.22 : 0.78) * (1.0 - 0.35 * r);
+    if (u_pass == ${PASS_DUST}) spread = 0.18;
+    // Concentrate stars along the arm's spine with soft tails.
+    float off = (a_seed.y - 0.5) * 2.0;
+    theta = armBase + spiral + off * abs(off) * spread;
+    // Dust lanes trail slightly inside the arm's leading edge.
+    if (u_pass == ${PASS_DUST}) theta -= 0.22;
+  }
+
+  // Nearly rigid rotation with a gentle differential term.
+  float omega = 0.035 * (0.82 + 0.18 * 0.3 / (r + 0.3));
+  theta -= u_spin * u_time * omega;
+
+  float h = (a_seed.z - 0.5) * 0.09 * (1.0 - r) ;
+  if (a_kind > 1.5 && a_kind < 2.5) h *= 3.5;
+  vec3 p3 = vec3(cos(theta) * r, sin(theta) * r, h);
+
+  // Incline the disk toward the viewer, then orient it on screen.
+  float ct = cos(u_tilt), st = sin(u_tilt);
+  vec2 p2 = vec2(p3.x, p3.y * ct - p3.z * st);
+  float ca = cos(u_angle), sa = sin(u_angle);
+  p2 = vec2(p2.x * ca - p2.y * sa, p2.x * sa + p2.y * ca);
+
+  float scale = u_scale * (1.0 + u_warp * u_warp * 0.9);
+  vec2 px = u_center + p2 * scale;
+
+  // Pointer gravity: a soft pull that falls off over ~160 CSS px.
+  vec2 d = u_pointer - px;
+  float sigma = 160.0 * u_dpr;
+  px += d * 0.22 * u_pull * exp(-dot(d, d) / (sigma * sigma));
+
+  gl_Position = vec4(px / u_res * 2.0 - 1.0, 0.0, 1.0);
+  gl_Position.y = -gl_Position.y;
+
+  float sizeScale = clamp(u_scale / (520.0 * u_dpr), 0.6, 1.5);
+
+  if (u_pass == ${PASS_GAS}) {
+    gl_PointSize = (40.0 + a_seed.w * 70.0) * u_dpr * sizeScale;
+    vec3 c = mix(TEAL, GOLD, clamp(u_warmth * 0.5 + (1.0 - r) * 1.1 - 0.62, 0.0, 1.0));
+    if (a_seed.w > 0.88) c = RUST;
+    float a = 0.06 * (1.0 - r * 0.6);
+    if (a_kind > 1.5) {
+      // Bulge glow: a few broad, warm sprites around the core.
+      gl_PointSize = (120.0 + a_seed.w * 160.0) * u_dpr * sizeScale;
+      c = mix(GOLD, GOLD_PALE, a_seed.w);
+      a = 0.04;
+    }
+    v_color = vec4(c, a * u_alpha);
+    return;
+  }
+
+  if (u_pass == ${PASS_DUST}) {
+    gl_PointSize = (14.0 + a_seed.w * 30.0) * u_dpr * sizeScale;
+    float a = 0.16 * smoothstep(0.08, 0.3, r) * (1.0 - smoothstep(0.7, 1.0, r));
+    v_color = vec4(0.0, 0.0, 0.0, a * u_alpha);
+    return;
+  }
+
+  // Stars.
+  vec3 c;
+  float size = 0.9 + a_seed.w * a_seed.w * 2.4;
+  float a = 0.55 + 0.45 * a_seed.w;
+  if (a_kind > 2.5) {
+    c = mix(RUST, vec3(0.95, 0.45, 0.42), a_seed.w);
+    size = 2.2 + a_seed.w * 3.0;
+    a = 0.75;
+  } else if (a_kind > 1.5) {
+    c = mix(GOLD, GOLD_PALE, a_seed.w);
+    c = mix(c, WHITE, smoothstep(0.06, 0.0, r) * 0.6);
+    a = (0.14 + 0.2 * a_seed.w) * (0.45 + smoothstep(0.0, 0.2, r) * 0.55);
+    size *= 0.8;
+  } else {
+    vec3 young = mix(TEAL_PALE, BLUEWHITE, a_seed.w);
+    vec3 old = mix(GOLD, WHITE, a_seed.w * 0.6);
+    float warm = clamp(u_warmth * 0.5 + (1.0 - r) * 0.7 - 0.45 + (a_seed.z - 0.5) * 0.5, 0.0, 1.0);
+    c = mix(young, old, warm);
+  }
+  gl_PointSize = size * u_dpr * sizeScale * (1.0 + u_warp * 0.6);
+  // Fewer screen pixels per star means more overlap: dim to keep the core from clipping.
+  float density = clamp(pow(u_scale / (1000.0 * u_dpr), 1.1), 0.42, 1.0);
+  v_color = vec4(c, a * u_alpha * density);
+}
+`;
+
+const FRAG = /* glsl */ `
+precision highp float;
+precision highp int;
+uniform int u_pass;
+varying vec4 v_color;
+varying float v_kind;
+
+void main() {
+  vec2 p = gl_PointCoord - 0.5;
+  float d2 = dot(p, p);
+  float a;
+  if (u_pass == ${PASS_SPIKES}) {
+    // Core plus four diffraction spikes.
+    float core = exp(-d2 * 900.0);
+    float halo = exp(-d2 * 90.0) * 0.18;
+    float sx = exp(-abs(p.y) * 160.0) * (1.0 - smoothstep(0.0, 0.5, abs(p.x)));
+    float sy = exp(-abs(p.x) * 160.0) * (1.0 - smoothstep(0.0, 0.5, abs(p.y)));
+    a = core + halo + (sx + sy) * 0.55;
+  } else if (u_pass == ${PASS_GAS} || u_pass == ${PASS_DUST}) {
+    a = exp(-d2 * 9.0) * (1.0 - smoothstep(0.2, 0.25, d2));
+  } else {
+    a = exp(-d2 * 22.0) * (1.0 - smoothstep(0.2, 0.25, d2));
+  }
+  gl_FragColor = vec4(v_color.rgb, v_color.a * a);
+}
+`;
+
+const QUAD_VERT = /* glsl */ `
+attribute vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const QUAD_FRAG = /* glsl */ `
+precision mediump float;
+uniform vec4 u_color;
+void main() { gl_FragColor = u_color; }
+`;
+
+function rng(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function gaussian(rand: () => number) {
+  // Sum of uniforms: cheap, bounded bell curve in 0..1.
+  return (rand() + rand() + rand() + rand()) / 4;
+}
+
+interface Buffers {
+  buf: WebGLBuffer;
+  count: number;
+}
+
+function buildCloud(
+  gl: WebGLRenderingContext,
+  count: number,
+  make: (rand: () => number, out: Float32Array, o: number) => void,
+  seed: number,
+): Buffers {
+  const rand = rng(seed);
+  const data = new Float32Array(count * 6);
+  for (let i = 0; i < count; i++) make(rand, data, i * 6);
+  const buf = gl.createBuffer()!;
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+  return { buf, count };
+}
+
+function compile(gl: WebGLRenderingContext, vs: string, fs: string) {
+  const prog = gl.createProgram()!;
+  for (const [type, src] of [
+    [gl.VERTEX_SHADER, vs],
+    [gl.FRAGMENT_SHADER, fs],
+  ] as const) {
+    const sh = gl.createShader(type)!;
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      throw new Error(gl.getShaderInfoLog(sh) || 'shader compile failed');
+    }
+    gl.attachShader(prog, sh);
+  }
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    throw new Error(gl.getProgramInfoLog(prog) || 'program link failed');
+  }
+  return prog;
+}
+
+export interface Scene {
+  shape: GalaxyShape;
+  el: HTMLElement;
+  /** hero: the opening plate; close: the horizon under the final call; stop: a brand. */
+  kind: 'hero' | 'stop' | 'close';
+}
+
+export interface GalaxyController {
+  warp(durationMs: number): Promise<void>;
+  reset(): void;
+}
+
+export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyController | null {
+  const gl = canvas.getContext('webgl', {
+    alpha: false,
+    antialias: false,
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: true,
+    powerPreference: 'high-performance',
+  });
+  if (!gl) return null;
+
+  let prog: WebGLProgram;
+  let quad: WebGLProgram;
+  try {
+    prog = compile(gl, VERT, FRAG);
+    quad = compile(gl, QUAD_VERT, QUAD_FRAG);
+  } catch (err) {
+    console.warn('[cosmos] galaxy disabled:', err);
+    return null;
+  }
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const small = Math.min(window.innerWidth, window.innerHeight) < 700;
+
+  // --- Geometry -----------------------------------------------------------
+  const starCount = small ? 16000 : 38000;
+  const stars = buildCloud(
+    gl,
+    starCount,
+    (rand, out, o) => {
+      const k = rand();
+      let kind: number;
+      let r: number;
+      if (k < 0.18) {
+        kind = 2; // bulge
+        r = Math.pow(rand(), 1.6) * 0.26;
+      } else {
+        kind = k < 0.66 ? 0 : k < 0.975 ? 1 : 3;
+        // Exponential disk, clipped at the rim; arms begin outside the bulge.
+        r = -Math.log(1 - rand() * 0.95) / 3.0;
+        r = 0.1 + r * 0.9;
+      }
+      out[o] = r;
+      out[o + 1] = rand();
+      out[o + 2] = gaussian(rand);
+      out[o + 3] = rand();
+      out[o + 4] = rand();
+      out[o + 5] = kind;
+    },
+    7,
+  );
+  const gas = buildCloud(
+    gl,
+    small ? 520 : 900,
+    (rand, out, o) => {
+      const k = rand();
+      const kind = k < 0.08 ? 2 : k < 0.78 ? 0 : 1;
+      out[o] = kind === 2 ? Math.pow(rand(), 2) * 0.16 : 0.1 + Math.pow(rand(), 0.9) * 0.85;
+      out[o + 1] = rand();
+      out[o + 2] = gaussian(rand);
+      out[o + 3] = rand();
+      out[o + 4] = rand();
+      out[o + 5] = kind;
+    },
+    11,
+  );
+  const dust = buildCloud(
+    gl,
+    small ? 700 : 1300,
+    (rand, out, o) => {
+      out[o] = 0.08 + rand() * 0.85;
+      out[o + 1] = rand();
+      out[o + 2] = gaussian(rand);
+      out[o + 3] = rand();
+      out[o + 4] = rand();
+      out[o + 5] = 0;
+    },
+    13,
+  );
+  const field = buildCloud(
+    gl,
+    small ? 500 : 1100,
+    (rand, out, o) => {
+      out[o] = 0;
+      out[o + 1] = rand();
+      out[o + 2] = rand();
+      out[o + 3] = Math.pow(rand(), 3);
+      out[o + 4] = rand();
+      out[o + 5] = 0;
+    },
+    17,
+  );
+  const spikes = buildCloud(
+    gl,
+    small ? 7 : 13,
+    (rand, out, o) => {
+      out[o] = 0;
+      out[o + 1] = 0.04 + rand() * 0.92;
+      out[o + 2] = 0.04 + rand() * 0.92;
+      out[o + 3] = rand();
+      out[o + 4] = rand();
+      out[o + 5] = 0;
+    },
+    23,
+  );
+  // Field and spike seeds are stored in slots 1..4 (x, y, size, hue).
+  // The shader reads a_seed.xy as screen position for those passes.
+
+  const quadBuf = gl.createBuffer()!;
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+
+  // --- Uniforms -----------------------------------------------------------
+  const loc = {
+    r: gl.getAttribLocation(prog, 'a_r'),
+    seed: gl.getAttribLocation(prog, 'a_seed'),
+    kind: gl.getAttribLocation(prog, 'a_kind'),
+  };
+  const u = (name: string) => gl.getUniformLocation(prog, name);
+  const U = {
+    res: u('u_res'),
+    dpr: u('u_dpr'),
+    time: u('u_time'),
+    pass: u('u_pass'),
+    arms: u('u_arms'),
+    wind: u('u_wind'),
+    tilt: u('u_tilt'),
+    angle: u('u_angle'),
+    spin: u('u_spin'),
+    warmth: u('u_warmth'),
+    center: u('u_center'),
+    scale: u('u_scale'),
+    alpha: u('u_alpha'),
+    pointer: u('u_pointer'),
+    pull: u('u_pull'),
+    warp: u('u_warp'),
+  };
+  const quadPos = gl.getAttribLocation(quad, 'a_pos');
+  const quadColor = gl.getUniformLocation(quad, 'u_color');
+
+  // --- State --------------------------------------------------------------
+  let dpr = 1;
+  let W = 0;
+  let H = 0;
+  const pointer = { x: -1e5, y: -1e5 };
+  let pull = 0;
+  let pullTarget = 0;
+  let warp = 0;
+  let warping = false;
+  let time = 12; // start mid-rotation so the first frame is already composed
+  let last = performance.now();
+  let raf = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75);
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    W = Math.max(1, Math.round(w * dpr));
+    H = Math.max(1, Math.round(h * dpr));
+    if (canvas.width !== W || canvas.height !== H) {
+      canvas.width = W;
+      canvas.height = H;
+    }
+    gl!.viewport(0, 0, W, H);
+  }
+
+  function bindCloud(c: Buffers) {
+    gl!.bindBuffer(gl!.ARRAY_BUFFER, c.buf);
+    gl!.enableVertexAttribArray(loc.r);
+    gl!.vertexAttribPointer(loc.r, 1, gl!.FLOAT, false, 24, 0);
+    gl!.enableVertexAttribArray(loc.seed);
+    gl!.vertexAttribPointer(loc.seed, 4, gl!.FLOAT, false, 24, 4);
+    gl!.enableVertexAttribArray(loc.kind);
+    gl!.vertexAttribPointer(loc.kind, 1, gl!.FLOAT, false, 24, 20);
+  }
+
+  /** Scene weights from section positions: the two closest to the viewport centre. */
+  function sceneWeights() {
+    const vh = window.innerHeight;
+    const mid = vh / 2;
+    const list = scenes.map((s, i) => {
+      const rect = s.el.getBoundingClientRect();
+      const c = rect.top + rect.height / 2;
+      const dist = Math.abs(c - mid) / (vh * 0.9);
+      return { i, w: Math.max(0, 1 - dist), offset: c - mid };
+    });
+    list.sort((a, b) => b.w - a.w);
+    const top = list.slice(0, 2).filter((s) => s.w > 0);
+    if (!top.length) return [{ i: 0, w: 1, offset: 0 }];
+    if (reduceMotion.matches) return [{ ...top[0], w: 1, offset: 0 }];
+    // Smoothstep the pair so the crossfade lingers on each galaxy.
+    const sum = top.reduce((a, s) => a + s.w, 0);
+    return top.map((s) => {
+      const t = s.w / sum;
+      return { ...s, w: t * t * (3 - 2 * t) };
+    });
+  }
+
+  /** Mirrors the CSS: stacked below 760px, and on portrait screens under 1100px. */
+  function isStacked(cssW: number, cssH: number) {
+    return cssW < 760 || (cssH > cssW && cssW < 1100);
+  }
+
+  function layout(scene: Scene) {
+    const cssW = W / dpr;
+    const cssH = H / dpr;
+    const stacked = isStacked(cssW, cssH);
+    // Content lives in a centred frame up to 1920px wide; galaxies align to it.
+    const frame = Math.min(cssW, 1920);
+    const left = (cssW - frame) / 2;
+    const s = scene.shape;
+    let x = left + s.x * frame;
+    let y = s.y * cssH;
+    let radius: number;
+    if (scene.kind === 'close') {
+      // A near edge-on disk lying under the closing call, like a horizon.
+      radius = stacked ? cssW * 0.95 : Math.min(frame * 0.46, cssH * 0.9);
+      x = cssW / 2;
+      y = cssH * (stacked ? 0.82 : 0.8);
+    } else if (scene.kind === 'hero') {
+      radius = stacked ? Math.max(cssW * 0.85, cssH * 0.4) : Math.min(frame * 0.5, cssH * 0.78);
+      if (stacked) {
+        x = cssW * 0.62;
+        y = cssH * 0.3;
+      }
+    } else {
+      radius = stacked ? Math.min(cssW * 0.62, cssH * 0.3) : Math.min(frame * 0.34, cssH * 0.52);
+      if (stacked) {
+        x = cssW * 0.5;
+        y = cssH * 0.3;
+      }
+    }
+    return { x: x * dpr, y: y * dpr, radius: radius * dpr };
+  }
+
+  function drawScene(scene: Scene, weight: number, offset: number) {
+    const s = scene.shape;
+    const L = layout(scene);
+    gl!.uniform1f(U.arms, s.arms);
+    gl!.uniform1f(U.wind, s.wind);
+    gl!.uniform1f(U.tilt, s.tilt);
+    gl!.uniform1f(U.angle, s.angle);
+    gl!.uniform1f(U.spin, s.spin);
+    gl!.uniform1f(U.warmth, s.warmth);
+    // Drift with the scroll so the galaxy travels with its section.
+    gl!.uniform2f(U.center, L.x, L.y + offset * 0.35 * dpr);
+    gl!.uniform1f(U.scale, L.radius);
+    gl!.uniform1f(U.alpha, weight);
+
+    gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
+    gl!.uniform1i(U.pass, PASS_GAS);
+    bindCloud(gas);
+    gl!.drawArrays(gl!.POINTS, 0, gas.count);
+
+    gl!.blendFunc(gl!.ZERO, gl!.ONE_MINUS_SRC_ALPHA);
+    gl!.uniform1i(U.pass, PASS_DUST);
+    bindCloud(dust);
+    gl!.drawArrays(gl!.POINTS, 0, dust.count);
+
+    gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
+    gl!.uniform1i(U.pass, PASS_STARS);
+    bindCloud(stars);
+    gl!.drawArrays(gl!.POINTS, 0, stars.count);
+  }
+
+  function frame(now: number) {
+    raf = 0;
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const still = reduceMotion.matches;
+    if (!still) time += dt * (1 + warp * warp * 40);
+
+    pull += (pullTarget - pull) * Math.min(1, dt * (pullTarget > pull ? 3 : 1.2));
+    if (still) pull = 0;
+
+    // Clear, or during the warp let the previous frame persist as a trail.
+    gl!.useProgram(quad);
+    gl!.enable(gl!.BLEND);
+    gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA);
+    gl!.bindBuffer(gl!.ARRAY_BUFFER, quadBuf);
+    gl!.enableVertexAttribArray(quadPos);
+    gl!.vertexAttribPointer(quadPos, 2, gl!.FLOAT, false, 0, 0);
+    const fade = warping ? Math.max(0.05, 1 - warp * 1.4) : 1;
+    gl!.uniform4f(quadColor, VOID[0], VOID[1], VOID[2], fade);
+    gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
+    gl!.disableVertexAttribArray(quadPos);
+
+    gl!.useProgram(prog);
+    gl!.uniform2f(U.res, W, H);
+    gl!.uniform1f(U.dpr, dpr);
+    gl!.uniform1f(U.time, time);
+    gl!.uniform2f(U.pointer, pointer.x * dpr, pointer.y * dpr);
+    gl!.uniform1f(U.pull, pull);
+    gl!.uniform1f(U.warp, warp);
+
+    // Backdrop field stars.
+    gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
+    gl!.uniform1i(U.pass, PASS_FIELD);
+    gl!.uniform1f(U.alpha, 1);
+    bindCloud(field);
+    gl!.drawArrays(gl!.POINTS, 0, field.count);
+
+    for (const w of sceneWeights()) {
+      if (w.w > 0.002) drawScene(scenes[w.i], w.w, w.offset);
+    }
+
+    gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
+    gl!.uniform1i(U.pass, PASS_SPIKES);
+    gl!.uniform1f(U.alpha, 1);
+    bindCloud(spikes);
+    gl!.drawArrays(gl!.POINTS, 0, spikes.count);
+
+    // Keep animating unless motion is reduced; then draw only on change.
+    if (!still || warping) schedule();
+  }
+
+  function schedule() {
+    if (!raf && !document.hidden) raf = requestAnimationFrame(frame);
+  }
+
+  function invalidate() {
+    schedule();
+  }
+
+  // --- Events -------------------------------------------------------------
+  const ro = new ResizeObserver(() => {
+    resize();
+    invalidate();
+  });
+  ro.observe(canvas);
+  resize();
+
+  const onPointer = (e: PointerEvent) => {
+    pointer.x = e.clientX;
+    pointer.y = e.clientY;
+    pullTarget = e.pointerType === 'touch' ? 1.3 : 1;
+    schedule();
+  };
+  const release = () => {
+    pullTarget = 0;
+  };
+  window.addEventListener('pointermove', onPointer, { passive: true });
+  window.addEventListener('pointerdown', onPointer, { passive: true });
+  window.addEventListener('pointerup', (e) => e.pointerType === 'touch' && release(), { passive: true });
+  window.addEventListener('pointercancel', release, { passive: true });
+  document.documentElement.addEventListener('pointerleave', release);
+  window.addEventListener('blur', release);
+  window.addEventListener('scroll', invalidate, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    last = performance.now();
+    schedule();
+  });
+  reduceMotion.addEventListener('change', invalidate);
+
+  schedule();
+
+  return {
+    warp(durationMs: number) {
+      if (reduceMotion.matches) return Promise.resolve();
+      warping = true;
+      pullTarget = 0;
+      const start = performance.now();
+      schedule();
+      return new Promise((resolve) => {
+        const tick = (now: number) => {
+          const t = Math.min(1, (now - start) / durationMs);
+          // Exponential ease-in: the shutter opens slowly, then everything goes.
+          warp = t === 0 ? 0 : Math.pow(2, 10 * t - 10);
+          warp = Math.min(1, warp * 1.0 + t * 0.35);
+          if (t < 1) requestAnimationFrame(tick);
+          else resolve();
+        };
+        requestAnimationFrame(tick);
+      });
+    },
+    reset() {
+      warping = false;
+      warp = 0;
+      invalidate();
+    },
+  };
+}

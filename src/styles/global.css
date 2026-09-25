@@ -1,0 +1,258 @@
+/* Deep Field Plate: narrowband light on a photographic void. */
+:root {
+  --void: #04060b;
+  --void-2: #0a0f16;
+  --ink: #ede6da;
+  --ink-soft: #b9c4c2;
+  --ink-faint: rgb(237 230 218 / 0.38);
+  --hairline: rgb(237 230 218 / 0.22);
+  --teal: #1fa7a0;
+  --teal-bright: #6fd6cb;
+  --gold: #e3a24a;
+  --gold-bright: #f2c47a;
+  --rust: #b5452e;
+
+  --font-display: 'Unbounded Variable', 'Unbounded', ui-sans-serif, sans-serif;
+  --font-text: 'Geologica Variable', 'Geologica', ui-sans-serif, sans-serif;
+
+  --gutter: clamp(1rem, 0.4rem + 3vw, 3.5rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--void);
+  scroll-behavior: smooth;
+  scrollbar-color: #2a3a3e var(--void);
+  scrollbar-width: thin;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--void);
+}
+
+:focus-visible {
+  outline: 2px solid var(--teal-bright);
+  outline-offset: 4px;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: 1px;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 50;
+  padding: 0.6rem 1rem;
+  background: var(--gold);
+  color: var(--void);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* ---- The sky --------------------------------------------------------- */
+
+.sky,
+.sky-fallback {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100lvh;
+  pointer-events: none;
+}
+
+.sky-fallback {
+  z-index: 0;
+  background:
+    url('/plate.webp') 64% 40% / cover no-repeat,
+    var(--void);
+}
+
+.sky {
+  z-index: 1;
+}
+
+/* Photographic grain over everything drawn, beneath the text. */
+.grain {
+  position: fixed;
+  inset: -50%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* Plate registration marks at the four corners of the viewport. */
+.registration {
+  position: fixed;
+  inset: clamp(0.75rem, 1.6vw, 1.5rem);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.registration span {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: var(--ink-faint);
+  border-style: solid;
+  border-width: 0;
+}
+
+.registration span:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.registration span:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.registration span:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.registration span:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+
+.page {
+  position: relative;
+  z-index: 4;
+}
+
+/* ---- Shared type ------------------------------------------------------- */
+
+.caption {
+  font-family: var(--font-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ---- Buttons: plate labels, not pills ---------------------------------- */
+
+.btn {
+  --btn-h: 3.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  min-height: var(--btn-h);
+  padding: 0 1.5rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  font-family: var(--font-text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 240ms var(--ease-out),
+    border-color 240ms var(--ease-out),
+    color 240ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.btn svg {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  transition: transform 320ms var(--ease-out);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn--warp {
+  background: var(--gold);
+  color: var(--void);
+  box-shadow: 0 10px 30px -12px rgb(227 162 74 / 0.55);
+}
+
+.btn--warp:hover {
+  background: var(--gold-bright);
+}
+
+.btn--warp:hover svg {
+  transform: translateX(4px);
+}
+
+.btn--explore {
+  border-color: rgb(237 230 218 / 0.5);
+  color: var(--ink);
+  background: rgb(4 6 11 / 0.25);
+}
+
+.btn--explore:hover {
+  border-color: var(--teal-bright);
+  color: #fff;
+}
+
+.btn--explore:hover svg {
+  transform: translateY(3px);
+}
+
+.btn[aria-disabled='true'] {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+@media (max-width: 420px) {
+  .btn {
+    justify-content: space-between;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
+  }
+}

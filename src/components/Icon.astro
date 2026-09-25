@@ -1,0 +1,37 @@
+---
+/** Hand-drawn 20px line icons, one stroke weight. */
+interface Props {
+  name: 'warp' | 'down' | 'out' | 'up';
+}
+const { name } = Astro.props;
+---
+
+<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" aria-hidden="true">
+  {name === 'warp' && (
+    <>
+      <path d="M2 10h13" />
+      <path d="M10.5 5.5 15 10l-4.5 4.5" />
+      <path d="M18 6v8" />
+    </>
+  )}
+  {name === 'down' && (
+    <>
+      <path d="M10 2v13" />
+      <path d="M5.5 10.5 10 15l4.5-4.5" />
+      <path d="M6 18h8" />
+    </>
+  )}
+  {name === 'up' && (
+    <>
+      <path d="M10 18V5" />
+      <path d="M5.5 9.5 10 5l4.5 4.5" />
+      <path d="M6 2h8" />
+    </>
+  )}
+  {name === 'out' && (
+    <>
+      <path d="M6 14 15 5" />
+      <path d="M7.5 5H15v7.5" />
+    </>
+  )}
+</svg>

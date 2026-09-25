@@ -1,0 +1,44 @@
+---
+import '@fontsource-variable/unbounded';
+import '@fontsource-variable/geologica';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#04060b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL('/plate.webp', Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" href="/plate.webp" as="image" fetchpriority="high" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="sky-fallback" aria-hidden="true"></div>
+    <slot name="sky" />
+    <div class="grain" aria-hidden="true"></div>
+    <div class="registration" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <div class="page">
+      <slot />
+    </div>
+    <slot name="overlay" />
+  </body>
+</html>

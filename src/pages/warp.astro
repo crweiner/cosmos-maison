@@ -1,0 +1,74 @@
+---
+import Base from '../layouts/Base.astro';
+import { warpTargets } from '../data/brands';
+---
+
+<Base
+  title="Warping to a random Cosmos · cosmos.maison"
+  description="A shareable link that lands on one of Automattic's Cosmos brands at random."
+>
+  <main id="main" class="warp-page">
+    <h1>Warping to a random Cosmos</h1>
+    <p class="warp-page__note">If nothing happens, choose a destination:</p>
+    <ul>
+      {warpTargets.map((t) => <li><a href={t.url}>{t.name}</a></li>)}
+    </ul>
+    <p><a class="warp-page__home" href="/">Back to cosmos.maison</a></p>
+  </main>
+  <script is:inline define:vars={{ targets: warpTargets }}>
+    var pick = targets[Math.floor(Math.random() * targets.length)];
+    window.location.replace(pick.url);
+  </script>
+</Base>
+
+<style>
+  .warp-page {
+    min-height: 100svh;
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    padding: 6rem var(--gutter);
+    max-width: 40rem;
+  }
+
+  h1 {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: clamp(2rem, 1rem + 3.6vw, 3.75rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .warp-page__note {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--hairline);
+  }
+
+  li a {
+    display: block;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--hairline);
+    text-decoration: none;
+    color: var(--gold-bright);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.9375rem;
+  }
+
+  li a:hover {
+    color: #fff;
+  }
+
+  .warp-page__home {
+    color: var(--ink-soft);
+  }
+</style>

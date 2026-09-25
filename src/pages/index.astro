@@ -1,0 +1,354 @@
+---
+import Base from '../layouts/Base.astro';
+import BrandStop from '../components/BrandStop.astro';
+import StopIndex from '../components/StopIndex.astro';
+import Icon from '../components/Icon.astro';
+import { brands, heroGalaxy, warpTargets } from '../data/brands';
+
+const first = brands[0];
+---
+
+<Base
+  title="Welcome to our Cosmos · cosmos.maison"
+  description="Explore our full galaxy of products: Tumblr, Day One, Pocket Casts, Me.sh, Spacefast and Beeper. Or warp to a random Cosmos."
+>
+  <canvas slot="sky" class="sky" id="sky" aria-hidden="true"></canvas>
+
+  <header class="masthead">
+    <a href="#top" class="caption masthead__mark">cosmos.maison</a>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title" data-scene={JSON.stringify(heroGalaxy)} data-hero>
+      <div class="hero__copy">
+        <h1 id="hero-title">Welcome to our&nbsp;Cosmos</h1>
+        <p class="hero__lede">Explore our full galaxy of products</p>
+        <div class="hero__actions">
+          <a class="btn btn--warp" href="/warp/" data-warp>
+            <span>Warp to a random Cosmos</span>
+            <Icon name="warp" />
+          </a>
+          <a class="btn btn--explore" href={`#${first.slug}`}>
+            <span>I want to explore</span>
+            <Icon name="down" />
+          </a>
+        </div>
+      </div>
+    </section>
+
+    {brands.map((brand) => <BrandStop brand={brand} />)}
+
+    <section class="close" aria-labelledby="close-title" data-scene={JSON.stringify({ ...heroGalaxy, tilt: 1.2, angle: -0.08, spin: -1, warmth: 0.6 })} data-close>
+      <h2 id="close-title">Pick a star, any&nbsp;star</h2>
+      <div class="close__actions">
+        <a class="btn btn--warp" href="/warp/" data-warp>
+          <span>Warp to a random Cosmos</span>
+          <Icon name="warp" />
+        </a>
+        <a class="btn btn--explore" href="#top">
+          <span>Back to the top</span>
+          <Icon name="up" />
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <StopIndex brands={brands} />
+
+  <footer class="colophon">
+    <p class="caption">cosmos.maison · The Cosmos family, part of Automattic</p>
+  </footer>
+
+  <div slot="overlay" class="warp-veil" aria-hidden="true"></div>
+  <p slot="overlay" class="warp-status" role="status" aria-live="polite"></p>
+
+  <script is:inline define:vars={{ targets: warpTargets }}>
+    window.__cosmosTargets = targets;
+  </script>
+</Base>
+
+<script>
+  import { startGalaxy, type Scene } from '../scripts/galaxy';
+
+  const root = document.documentElement;
+  const canvas = document.getElementById('sky') as HTMLCanvasElement;
+  const sceneEls = [...document.querySelectorAll<HTMLElement>('[data-scene]')];
+  const scenes: Scene[] = sceneEls.map((el) => ({
+    el,
+    kind: el.hasAttribute('data-hero') ? 'hero' : el.hasAttribute('data-close') ? 'close' : 'stop',
+    shape: JSON.parse(el.dataset.scene!),
+  }));
+
+  const sky = startGalaxy(canvas, scenes);
+  if (sky) root.classList.add('has-sky');
+  else canvas.remove();
+
+  // --- Warp: an "I'm Feeling Lucky" jump to one Cosmos brand ------------------
+  type Target = { name: string; url: string };
+  const targets: Target[] = (window as unknown as { __cosmosTargets: Target[] }).__cosmosTargets;
+  const status = document.querySelector<HTMLElement>('.warp-status')!;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function pickTarget(): Target {
+    let lastUrl: string | null = null;
+    try {
+      lastUrl = sessionStorage.getItem('cosmos:last-warp');
+    } catch {}
+    // Never land on the same brand twice in a row.
+    const pool = targets.length > 1 ? targets.filter((t) => t.url !== lastUrl) : targets;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    try {
+      sessionStorage.setItem('cosmos:last-warp', pick.url);
+    } catch {}
+    return pick;
+  }
+
+  let warping = false;
+  for (const btn of document.querySelectorAll<HTMLAnchorElement>('[data-warp]')) {
+    btn.addEventListener('click', async (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      if (warping) return;
+      warping = true;
+      const target = pickTarget();
+      status.textContent = `Warping to ${target.name}`;
+      root.classList.add('is-warping');
+      if (sky && !reduceMotion.matches) {
+        await sky.warp(1500);
+      }
+      window.location.assign(target.url);
+    });
+  }
+
+  // Returning with the back button restores the page from cache mid-warp.
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    warping = false;
+    root.classList.remove('is-warping');
+    status.textContent = '';
+    sky?.reset();
+  });
+
+  // --- Stop index: mark the stop in view -------------------------------------
+  const links = new Map(
+    [...document.querySelectorAll<HTMLAnchorElement>('[data-index-link]')].map((a) => [a.dataset.indexLink!, a]),
+  );
+  const hero = document.getElementById('top')!;
+  root.classList.add('at-top');
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const el = entry.target as HTMLElement;
+        if (el === hero) {
+          root.classList.toggle('at-top', entry.isIntersecting);
+          continue;
+        }
+        const link = links.get(el.id);
+        if (!link) continue;
+        if (entry.isIntersecting) {
+          links.forEach((l) => l.removeAttribute('aria-current'));
+          link.setAttribute('aria-current', 'true');
+        } else if (link.getAttribute('aria-current')) {
+          link.removeAttribute('aria-current');
+        }
+      }
+    },
+    { rootMargin: '-45% 0px -45% 0px' },
+  );
+  io.observe(hero);
+  document.querySelectorAll<HTMLElement>('.stop').forEach((s) => io.observe(s));
+</script>
+
+<style>
+  .masthead {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: min(100%, 1920px);
+    transform: translateX(-50%);
+    z-index: 5;
+    padding: clamp(1.5rem, 2.6vw, 2.5rem) var(--gutter);
+  }
+
+  .masthead__mark {
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    max-width: 1920px;
+    margin-inline: auto;
+    display: grid;
+    align-items: end;
+    padding: 7rem var(--gutter) clamp(3.5rem, 9vh, 7rem);
+  }
+
+  .hero__copy {
+    max-width: 44rem;
+    text-shadow: 0 2px 24px rgb(4 6 11 / 0.8);
+  }
+
+  h1 {
+    margin: 0 0 1.25rem;
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: clamp(2.4rem, min(0.9rem + 6.2vw, 12.5vh), 6rem);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    max-width: 11ch;
+    text-wrap: balance;
+  }
+
+  .hero__lede {
+    margin: 0 0 2.5rem;
+    max-width: 30ch;
+    font-size: clamp(1.15rem, 0.95rem + 0.8vw, 1.5rem);
+    font-weight: 300;
+    line-height: 1.4;
+    color: var(--ink-soft);
+  }
+
+  .hero__actions,
+  .close__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+  }
+
+  .close {
+    position: relative;
+    min-height: 100svh;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 2.5rem;
+    padding: 6rem var(--gutter) 34vh;
+    text-align: center;
+  }
+
+  .close h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: clamp(2rem, 1rem + 4vw, 4.25rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    text-shadow: 0 2px 24px rgb(4 6 11 / 0.85);
+  }
+
+  .close__actions {
+    justify-content: center;
+  }
+
+  .colophon {
+    position: relative;
+    z-index: 5;
+    padding: 0 var(--gutter) clamp(2rem, 4vw, 3rem);
+    text-align: center;
+  }
+
+  .colophon p {
+    margin: 0;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+  }
+
+  /* ---- Warp ------------------------------------------------------------ */
+
+  .warp-status {
+    position: fixed;
+    left: 50%;
+    bottom: clamp(2.5rem, 8vh, 5rem);
+    z-index: 30;
+    margin: 0;
+    transform: translateX(-50%);
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 0.8rem + 0.8vw, 1.4rem);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 500ms var(--ease-out) 250ms;
+    pointer-events: none;
+  }
+
+  .warp-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, rgb(242 196 122 / 0.55), rgb(4 6 11 / 0) 60%);
+    opacity: 0;
+    transition: opacity 900ms cubic-bezier(0.7, 0, 0.84, 0) 700ms;
+  }
+
+  :global(html.is-warping) .page,
+  :global(html.is-warping) .index,
+  :global(html.is-warping) .registration {
+    opacity: 0;
+    filter: blur(6px);
+    transition:
+      opacity 500ms var(--ease-out),
+      filter 500ms var(--ease-out);
+  }
+
+  :global(html.is-warping) .warp-status {
+    opacity: 1;
+  }
+
+  :global(html.is-warping) .warp-veil {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.is-warping) .page {
+      filter: none;
+    }
+
+    .warp-veil {
+      display: none;
+    }
+  }
+
+  /* Short landscape screens (phones on their side): tighten the stack. */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .hero {
+      padding-top: 4.5rem;
+      padding-bottom: 1.75rem;
+    }
+
+    h1 {
+      margin-bottom: 0.75rem;
+    }
+
+    .hero__lede {
+      margin-bottom: 1.25rem;
+    }
+
+    .hero__actions :global(.btn),
+    .close__actions :global(.btn) {
+      --btn-h: 3rem;
+    }
+
+    .close {
+      gap: 1.5rem;
+      padding-block: 3rem;
+    }
+  }
+
+  @media (max-width: 759px) {
+    .hero {
+      padding-bottom: 3rem;
+    }
+
+    .hero__actions {
+      flex-direction: column;
+      align-items: stretch;
+      max-width: 22rem;
+    }
+  }
+</style>

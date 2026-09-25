@@ -1,0 +1,111 @@
+---
+import type { Brand } from '../data/brands';
+
+interface Props {
+  brands: Brand[];
+}
+const { brands } = Astro.props;
+---
+
+<nav class="index" aria-label="Cosmos brands">
+  <ol>
+    {
+      brands.map((b) => (
+        <li>
+          <a href={`#${b.slug}`} data-index-link={b.slug}>
+            <span class="index__label">{b.name}</span>
+            <span class="index__tick" aria-hidden="true" />
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+
+<style>
+  .index {
+    position: fixed;
+    top: 50%;
+    right: clamp(1.25rem, 2.4vw, 2.25rem);
+    z-index: 5;
+    transform: translateY(-50%);
+  }
+
+  ol {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    min-height: 2.25rem;
+    padding-left: 1rem;
+    text-decoration: none;
+    color: var(--ink-soft);
+  }
+
+  .index__label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateX(6px);
+    transition:
+      opacity 240ms var(--ease-out),
+      transform 240ms var(--ease-out);
+    text-shadow: 0 1px 10px rgb(4 6 11 / 0.9);
+  }
+
+  .index__tick {
+    width: 14px;
+    height: 1px;
+    background: var(--ink-faint);
+    transition:
+      width 320ms var(--ease-out),
+      background-color 240ms var(--ease-out);
+  }
+
+  a:hover .index__label,
+  a:focus-visible .index__label,
+  a[aria-current='true'] .index__label {
+    opacity: 1;
+    transform: none;
+  }
+
+  a:hover .index__tick,
+  a:focus-visible .index__tick {
+    background: var(--ink);
+  }
+
+  a[aria-current='true'] {
+    color: var(--ink);
+  }
+
+  a[aria-current='true'] .index__tick {
+    width: 28px;
+    background: var(--gold);
+  }
+
+  /* Hidden during the opening view and on narrow screens. */
+  :global(html.at-top) .index:not(:focus-within) {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .index {
+    transition: opacity 400ms var(--ease-out);
+  }
+
+  @media (max-width: 759px), (max-height: 520px) {
+    .index {
+      display: none;
+    }
+  }
+</style>
