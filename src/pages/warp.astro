@@ -1,6 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
-import { warpTargets } from '../data/brands';
+import { trackedTargets } from '../data/brands';
+
+const list = trackedTargets('warp-list');
+const targets = trackedTargets('warp-link');
 ---
 
 <Base
@@ -8,21 +11,21 @@ import { warpTargets } from '../data/brands';
   description="A shareable link that lands on one of Automattic's Cosmos brands at random."
 >
   <main id="main" class="warp-page">
-    <h1>Warping to a random Cosmos</h1>
+    <h1 class="headline">Warping to a random Cosmos</h1>
     <p class="warp-page__note">If nothing happens, choose a destination:</p>
     <ul>
-      {warpTargets.map((t) => <li><a href={t.url}>{t.name}</a></li>)}
+      {list.map((t) => <li><a href={t.url}>{t.name}</a></li>)}
     </ul>
     <p><a class="warp-page__home" href="/">Back to cosmos.maison</a></p>
   </main>
-  <script is:inline define:vars={{ targets: warpTargets }}>
+  <script is:inline define:vars={{ targets }}>
     // Same rule as the home page: never land on the brand chosen last.
     var last = null;
     try { last = sessionStorage.getItem('cosmos:last-warp'); } catch (e) {}
-    var pool = targets.filter(function (t) { return t.url !== last; });
+    var pool = targets.filter(function (t) { return t.name !== last; });
     if (!pool.length) pool = targets;
     var pick = pool[Math.floor(Math.random() * pool.length)];
-    try { sessionStorage.setItem('cosmos:last-warp', pick.url); } catch (e) {}
+    try { sessionStorage.setItem('cosmos:last-warp', pick.name); } catch (e) {}
     window.location.replace(pick.url);
   </script>
 </Base>
@@ -35,15 +38,18 @@ import { warpTargets } from '../data/brands';
     gap: 1rem;
     padding: 6rem var(--gutter);
     max-width: 40rem;
+    text-shadow: 0 2px 18px rgb(4 6 11 / 0.9);
+  }
+
+  @media (max-width: 759px) {
+    .warp-page {
+      align-content: end;
+      padding-bottom: 3rem;
+    }
   }
 
   h1 {
-    margin: 0 0 0.5rem;
-    font-family: var(--font-display);
-    font-weight: 300;
-    font-size: clamp(2rem, 1rem + 3.6vw, 3.75rem);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
   }
 
   .warp-page__note {
@@ -71,7 +77,7 @@ import { warpTargets } from '../data/brands';
   }
 
   li a:hover {
-    color: #fff;
+    color: var(--starlight);
   }
 
   .warp-page__home {

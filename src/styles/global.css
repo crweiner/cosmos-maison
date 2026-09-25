@@ -1,7 +1,6 @@
 /* Deep Field Plate: narrowband light on a photographic void. */
 :root {
   --void: #04060b;
-  --void-2: #0a0f16;
   --ink: #ede6da;
   --ink-soft: #b9c4c2;
   --ink-faint: rgb(237 230 218 / 0.38);
@@ -10,7 +9,8 @@
   --teal-bright: #6fd6cb;
   --gold: #e3a24a;
   --gold-bright: #f2c47a;
-  --rust: #b5452e;
+  --rust: #c74d38;
+  --starlight: #ffffff;
 
   --font-display: 'Unbounded Variable', 'Unbounded', ui-sans-serif, sans-serif;
   --font-text: 'Geologica Variable', 'Geologica', ui-sans-serif, sans-serif;
@@ -127,6 +127,14 @@ svg {
   z-index: 1;
 }
 
+/* Pages without the live sky: keep the plate's core clear of the copy. */
+@media (max-width: 759px), (orientation: portrait) and (max-width: 1099px) {
+  .sky-fallback {
+    background-position: 72% 0%;
+    background-size: auto 70lvh;
+  }
+}
+
 /* Photographic grain over everything drawn, beneath the text. */
 .grain {
   position: fixed;
@@ -174,6 +182,18 @@ svg {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-soft);
+}
+
+/* Secondary headline: the closing call and the utility pages share it. */
+.headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2rem, 1rem + 4vw, 4.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  text-shadow: 0 2px 24px rgb(4 6 11 / 0.85);
 }
 
 /* ---- Buttons: plate labels, not pills ---------------------------------- */
@@ -235,23 +255,18 @@ svg {
 
 .btn--explore:hover {
   border-color: var(--teal-bright);
-  color: #fff;
+  color: var(--starlight);
 }
 
 .btn--explore:hover svg {
   transform: translateY(3px);
 }
 
-.btn[aria-disabled='true'] {
-  pointer-events: none;
-  opacity: 0.7;
-}
-
 @media (max-width: 420px) {
   .btn {
     justify-content: space-between;
     padding: 0 1rem;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     letter-spacing: 0.04em;
   }
 }

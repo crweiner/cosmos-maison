@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import BrandStop from '../components/BrandStop.astro';
 import StopIndex from '../components/StopIndex.astro';
 import Icon from '../components/Icon.astro';
-import { brands, heroGalaxy, warpTargets } from '../data/brands';
+import { brands, heroGalaxy, trackedTargets } from '../data/brands';
 
 const first = brands[0];
 ---
@@ -39,7 +39,7 @@ const first = brands[0];
     {brands.map((brand) => <BrandStop brand={brand} />)}
 
     <section class="close" aria-labelledby="close-title" data-scene={JSON.stringify({ ...heroGalaxy, tilt: 1.2, angle: -0.08, spin: -1, warmth: 0.6 })} data-close>
-      <h2 id="close-title">Pick a star, any&nbsp;star</h2>
+      <h2 id="close-title" class="headline">Pick&nbsp;a&nbsp;star, any&nbsp;star</h2>
       <div class="close__actions">
         <a class="btn btn--warp" href="/warp/" data-warp>
           <span>Warp to a random Cosmos</span>
@@ -61,10 +61,9 @@ const first = brands[0];
     <p class="caption">cosmos.maison · The Cosmos family, part of Automattic</p>
   </footer>
 
-  <div slot="overlay" class="warp-veil" aria-hidden="true"></div>
   <p slot="overlay" class="warp-status" role="status" aria-live="polite"></p>
 
-  <script is:inline define:vars={{ targets: warpTargets }}>
+  <script is:inline define:vars={{ targets: trackedTargets('warp') }}>
     window.__cosmosTargets = targets;
   </script>
 </Base>
@@ -92,15 +91,15 @@ const first = brands[0];
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function pickTarget(): Target {
-    let lastUrl: string | null = null;
+    let lastName: string | null = null;
     try {
-      lastUrl = sessionStorage.getItem('cosmos:last-warp');
+      lastName = sessionStorage.getItem('cosmos:last-warp');
     } catch {}
     // Never land on the same brand twice in a row.
-    const pool = targets.length > 1 ? targets.filter((t) => t.url !== lastUrl) : targets;
+    const pool = targets.length > 1 ? targets.filter((t) => t.name !== lastName) : targets;
     const pick = pool[Math.floor(Math.random() * pool.length)];
     try {
-      sessionStorage.setItem('cosmos:last-warp', pick.url);
+      sessionStorage.setItem('cosmos:last-warp', pick.name);
     } catch {}
     return pick;
   }
@@ -236,16 +235,6 @@ const first = brands[0];
     text-align: center;
   }
 
-  .close h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-weight: 300;
-    font-size: clamp(2rem, 1rem + 4vw, 4.25rem);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    text-wrap: balance;
-    text-shadow: 0 2px 24px rgb(4 6 11 / 0.85);
-  }
 
   .close__actions {
     justify-content: center;
@@ -258,7 +247,7 @@ const first = brands[0];
     bottom: clamp(0.75rem, 1.6vw, 1.5rem);
     z-index: 5;
     margin: 0;
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     color: var(--ink-soft);
     transform: translateY(40%);
     transition: opacity 400ms var(--ease-out);
@@ -293,29 +282,23 @@ const first = brands[0];
     margin: 0;
     transform: translateX(-50%);
     font-family: var(--font-display);
-    font-size: clamp(1rem, 0.8rem + 0.8vw, 1.4rem);
+    font-size: clamp(1.15rem, 0.95rem + 0.8vw, 1.5rem);
     font-weight: 400;
     letter-spacing: 0.02em;
-    color: var(--ink);
+    color: var(--starlight);
+    /* Stays legible as the plate burns from black to white. */
+    mix-blend-mode: difference;
     white-space: nowrap;
     opacity: 0;
     transition: opacity 500ms var(--ease-out) 250ms;
     pointer-events: none;
   }
 
-  .warp-veil {
-    position: fixed;
-    inset: 0;
-    z-index: 25;
-    pointer-events: none;
-    background: radial-gradient(circle at 50% 50%, rgb(242 196 122 / 0.55), rgb(4 6 11 / 0) 60%);
-    opacity: 0;
-    transition: opacity 900ms cubic-bezier(0.7, 0, 0.84, 0) 700ms;
-  }
 
-  :global(html.is-warping) .page,
-  :global(html.is-warping) .index,
-  :global(html.is-warping) .registration {
+  :global(html.is-warping .page),
+  :global(html.is-warping .index),
+  :global(html.is-warping .registration),
+  :global(html.is-warping .plate-id) {
     opacity: 0;
     filter: blur(6px);
     transition:
@@ -327,17 +310,10 @@ const first = brands[0];
     opacity: 1;
   }
 
-  :global(html.is-warping) .warp-veil {
-    opacity: 1;
-  }
 
   @media (prefers-reduced-motion: reduce) {
-    :global(html.is-warping) .page {
+    :global(html.is-warping .page) {
       filter: none;
-    }
-
-    .warp-veil {
-      display: none;
     }
   }
 

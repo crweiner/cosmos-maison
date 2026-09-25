@@ -5,7 +5,7 @@ import Icon from '../components/Icon.astro';
 
 <Base title="Lost in space · cosmos.maison" description="This page drifted out of the Cosmos.">
   <main id="main" class="lost">
-    <h1>This page drifted out of&nbsp;range</h1>
+    <h1 class="headline">This page drifted out of&nbsp;range</h1>
     <p>The address you followed doesn't point to anything in our Cosmos.</p>
     <div class="lost__actions">
       <a class="btn btn--warp" href="/warp/">
@@ -30,25 +30,25 @@ import Icon from '../components/Icon.astro';
     max-width: 48rem;
   }
 
-  h1 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-weight: 300;
-    font-size: clamp(2.2rem, 1rem + 4.4vw, 4.5rem);
-    line-height: 1.04;
-    letter-spacing: -0.03em;
-    text-wrap: balance;
-  }
 
   p {
     margin: 0 0 1.25rem;
     color: var(--ink-soft);
     max-width: 40ch;
+    text-shadow: 0 2px 18px rgb(4 6 11 / 0.9);
   }
 
   .lost__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.875rem;
+  }
+
+  @media (max-width: 759px) {
+    .lost__actions {
+      flex-direction: column;
+      align-items: stretch;
+      max-width: 22rem;
+    }
   }
 </style>

@@ -238,10 +238,11 @@ precision mediump float;
 uniform sampler2D u_tex;
 uniform float u_headroom;
 uniform vec3 u_void;
+uniform float u_exposure;
 varying vec2 v_uv;
 void main() {
   vec3 c = texture2D(u_tex, v_uv).rgb / u_headroom;
-  vec3 mapped = 1.0 - exp(-c * 1.85);
+  vec3 mapped = 1.0 - exp(-c * u_exposure);
   gl_FragColor = vec4(u_void + (1.0 - u_void) * mapped, 1.0);
 }
 `;
@@ -460,6 +461,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     tex: gl.getUniformLocation(resolveProg, 'u_tex'),
     headroom: gl.getUniformLocation(resolveProg, 'u_headroom'),
     void: gl.getUniformLocation(resolveProg, 'u_void'),
+    exposure: gl.getUniformLocation(resolveProg, 'u_exposure'),
   };
   const headroomLoc = gl.getUniformLocation(prog, 'u_headroom');
 
@@ -678,6 +680,8 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     gl!.uniform1i(R.tex, 0);
     gl!.uniform1f(R.headroom, headroom);
     gl!.uniform3f(R.void, VOID[0], VOID[1], VOID[2]);
+    // The warp holds the shutter open until the plate burns out to light.
+    gl!.uniform1f(R.exposure, 1.85 * (1 + Math.pow(warp, 3) * 9));
     gl!.bindBuffer(gl!.ARRAY_BUFFER, quadBuf);
     gl!.enableVertexAttribArray(resolvePos);
     gl!.vertexAttribPointer(resolvePos, 2, gl!.FLOAT, false, 0, 0);

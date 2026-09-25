@@ -1,5 +1,5 @@
 ---
-import type { Brand } from '../data/brands';
+import { referral, type Brand } from '../data/brands';
 import Icon from './Icon.astro';
 
 interface Props {
@@ -33,7 +33,7 @@ const logoH = 48;
     <p class="stop__haiku">
       {brand.haiku.map((line) => <span>{line}</span>)}
     </p>
-    <a class="stop__link" href={brand.url} data-brand={brand.slug}>
+    <a class="stop__link" href={referral(brand.url, 'stop')} data-brand={brand.slug}>
       <span>Visit {brand.host}</span>
       <Icon name="out" />
     </a>
@@ -126,7 +126,7 @@ const logoH = 48;
     border-top: 1px solid var(--hairline);
     min-width: min(100%, 16rem);
     min-height: 2.75rem;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -145,7 +145,7 @@ const logoH = 48;
   }
 
   .stop__link:hover {
-    color: #fff;
+    color: var(--starlight);
     border-color: var(--gold);
   }
 
@@ -183,10 +183,6 @@ const logoH = 48;
       grid-column: 1 / -1;
       width: min(100%, 36rem);
       padding-right: 0;
-    }
-
-    .stop__haiku {
-      font-size: clamp(1rem, 5.3cqi, 1.85rem);
     }
   }
 </style>

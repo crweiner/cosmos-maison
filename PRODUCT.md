@@ -40,6 +40,7 @@ This is the only place that presents Automattic's Cosmos brands together as one 
 - Supporting line: **"Explore our full galaxy of products"**.
 - Primary actions: **"Warp to a random Cosmos"** (sends the visitor straight to a random Cosmos brand's site) and **"I want to explore"** (scrolls down to the brand stops).
 - Each brand stop shows that brand's logo and an original haiku written for that company.
+- Every outbound link carries `utm_source=cosmos.maison&utm_medium=referral&utm_campaign=cosmos` plus `utm_content` naming the path (`warp`, `stop`, `warp-link`, `warp-list`), so brand logs credit cosmos.maison. Tagging lives in `referral()` in `src/data/brands.ts`; never link out without it.
 - Each brand stop shows the official mark, the owner-approved haiku, and a link to the brand's site. Haikus use no em dashes (owner preference).
 
 ## Brand Commitments

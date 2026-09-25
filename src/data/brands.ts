@@ -116,5 +116,22 @@ export const heroGalaxy: GalaxyShape = {
   y: 0.4,
 };
 
+/** Where a visitor left from, reported to the brand's analytics as utm_content. */
+export type ReferralPath = 'warp' | 'stop' | 'warp-link' | 'warp-list';
+
+/** Tag an outbound link so the destination's logs credit cosmos.maison. */
+export function referral(url: string, path: ReferralPath): string {
+  const u = new URL(url);
+  u.searchParams.set('utm_source', 'cosmos.maison');
+  u.searchParams.set('utm_medium', 'referral');
+  u.searchParams.set('utm_campaign', 'cosmos');
+  u.searchParams.set('utm_content', path);
+  return u.toString();
+}
+
 /** Destinations the warp can land on: every brand with a stop. */
 export const warpTargets = brands.map(({ name, url }) => ({ name, url }));
+
+/** Warp destinations already tagged for a given path. */
+export const trackedTargets = (path: ReferralPath) =>
+  warpTargets.map(({ name, url }) => ({ name, url: referral(url, path) }));
