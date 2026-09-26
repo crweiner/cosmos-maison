@@ -341,9 +341,24 @@ export interface Scene {
 export interface GalaxyController {
   warp(durationMs: number): Promise<void>;
   reset(): void;
+  /** Stop rendering and remove every listener; the canvas is left for the caller. */
+  destroy(): void;
 }
 
-export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyController | null {
+export interface GalaxyOptions {
+  /**
+   * Called when the browser drops the WebGL context (a GPU reset, or a phone
+   * reclaiming memory from a background tab). The renderer has already shut
+   * itself down; the caller shows the still plate and may start a new one.
+   */
+  onLost?: () => void;
+}
+
+export function startGalaxy(
+  canvas: HTMLCanvasElement,
+  scenes: Scene[],
+  options: GalaxyOptions = {},
+): GalaxyController | null {
   const gl = canvas.getContext('webgl', {
     alpha: false,
     antialias: false,
@@ -368,6 +383,10 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
   }
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  // Every listener hangs off this signal so the renderer can be torn down cleanly.
+  const listeners = new AbortController();
+  const signal = listeners.signal;
+  let dead = false;
   const small = Math.min(window.innerWidth, window.innerHeight) < 700;
 
   // --- Geometry -----------------------------------------------------------
@@ -721,6 +740,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
 
   function frame(now: number) {
     raf = 0;
+    if (dead) return;
     const still = reduceMotion.matches;
     // With no pointer, scroll or warp for a moment, the slow rotation runs at
     // 30fps: it reads the same and costs half the GPU time.
@@ -808,7 +828,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
   }
 
   function schedule() {
-    if (!raf && !document.hidden) raf = requestAnimationFrame(frame);
+    if (!raf && !dead && !document.hidden) raf = requestAnimationFrame(frame);
   }
 
   function invalidate() {
@@ -834,24 +854,49 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
   const release = () => {
     pullTarget = 0;
   };
-  window.addEventListener('pointermove', onPointer, { passive: true });
-  window.addEventListener('pointerdown', onPointer, { passive: true });
-  window.addEventListener('pointerup', (e) => e.pointerType === 'touch' && release(), { passive: true });
-  window.addEventListener('pointercancel', release, { passive: true });
-  document.documentElement.addEventListener('pointerleave', release);
-  window.addEventListener('blur', release);
-  window.addEventListener('scroll', invalidate, { passive: true });
-  document.addEventListener('visibilitychange', () => {
-    last = lastInput = performance.now();
-    schedule();
-  });
-  reduceMotion.addEventListener('change', invalidate);
+  const passive = { passive: true, signal };
+  window.addEventListener('pointermove', onPointer, passive);
+  window.addEventListener('pointerdown', onPointer, passive);
+  window.addEventListener('pointerup', (e) => e.pointerType === 'touch' && release(), passive);
+  window.addEventListener('pointercancel', release, passive);
+  document.documentElement.addEventListener('pointerleave', release, { signal });
+  window.addEventListener('blur', release, { signal });
+  window.addEventListener('scroll', invalidate, passive);
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      last = lastInput = performance.now();
+      schedule();
+    },
+    { signal },
+  );
+  reduceMotion.addEventListener('change', invalidate, { signal });
+
+  function destroy() {
+    if (dead) return;
+    dead = true;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    ro.disconnect();
+    listeners.abort();
+  }
+
+  canvas.addEventListener(
+    'webglcontextlost',
+    (e) => {
+      // Claim the event so the browser may hand back a context later.
+      e.preventDefault();
+      destroy();
+      options.onLost?.();
+    },
+    { signal },
+  );
 
   schedule();
 
   return {
     warp(durationMs: number) {
-      if (reduceMotion.matches) return Promise.resolve();
+      if (dead || reduceMotion.matches) return Promise.resolve();
       warping = true;
       pullTarget = 0;
       const start = performance.now();
@@ -862,7 +907,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
           // Exponential ease-in: the shutter opens slowly, then everything goes.
           warp = t === 0 ? 0 : Math.pow(2, 10 * t - 10);
           warp = Math.min(1, warp * 1.0 + t * 0.35);
-          if (t < 1) requestAnimationFrame(tick);
+          if (t < 1 && !dead) requestAnimationFrame(tick);
           else resolve();
         };
         requestAnimationFrame(tick);
@@ -873,5 +918,6 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
       warp = 0;
       invalidate();
     },
+    destroy,
   };
 }

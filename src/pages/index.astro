@@ -70,7 +70,7 @@ const first = brands[0];
 </Base>
 
 <script>
-  import { startGalaxy, type Scene } from '../scripts/galaxy';
+  import { startGalaxy, type GalaxyController, type Scene } from '../scripts/galaxy';
 
   const root = document.documentElement;
   const canvas = document.getElementById('sky') as HTMLCanvasElement;
@@ -81,16 +81,59 @@ const first = brands[0];
     shape: JSON.parse(el.dataset.scene!),
   }));
 
-  const sky = startGalaxy(canvas, scenes);
-  if (sky) root.classList.add('has-sky');
-  else {
-    canvas.remove();
+  /*
+   * The live sky is an enhancement. If it cannot start, or the browser later
+   * drops its GPU context, the page falls back to the still plate and every
+   * link and button keeps working.
+   */
+  let sky: GalaxyController | null = null;
+
+  function showPlate() {
+    root.classList.remove('has-sky');
     root.classList.add('no-sky');
+  }
+
+  function boot(target: HTMLCanvasElement): boolean {
+    try {
+      sky = startGalaxy(target, scenes, { onLost: () => lose(target) });
+    } catch (err) {
+      console.warn('[cosmos] live sky unavailable:', err);
+      sky = null;
+    }
+    if (sky) {
+      root.classList.remove('no-sky');
+      root.classList.add('has-sky');
+    }
+    return !!sky;
+  }
+
+  function lose(lost: HTMLCanvasElement) {
+    sky = null;
+    lost.style.visibility = 'hidden';
+    showPlate();
+    // When the GPU comes back, start over on a fresh canvas.
+    lost.addEventListener(
+      'webglcontextrestored',
+      () => {
+        const fresh = lost.cloneNode() as HTMLCanvasElement;
+        fresh.style.visibility = '';
+        lost.replaceWith(fresh);
+        if (!boot(fresh)) fresh.remove();
+      },
+      { once: true },
+    );
+  }
+
+  if (!boot(canvas)) {
+    canvas.remove();
+    showPlate();
   }
 
   // --- Warp: an "I'm Feeling Lucky" jump to one Cosmos brand ------------------
   type Target = { name: string; url: string };
-  const targets: Target[] = (window as unknown as { __cosmosTargets: Target[] }).__cosmosTargets;
+  const listed = (window as unknown as { __cosmosTargets?: Target[] }).__cosmosTargets;
+  // Without the destination list, leave the buttons as plain links to /warp/.
+  const targets: Target[] = Array.isArray(listed) ? listed : [];
   const status = document.querySelector<HTMLElement>('.warp-status')!;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -109,7 +152,7 @@ const first = brands[0];
   }
 
   let warping = false;
-  for (const btn of document.querySelectorAll<HTMLAnchorElement>('[data-warp]')) {
+  for (const btn of targets.length ? document.querySelectorAll<HTMLAnchorElement>('[data-warp]') : []) {
     btn.addEventListener('click', async (event) => {
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
       event.preventDefault();
@@ -119,7 +162,8 @@ const first = brands[0];
       status.textContent = `Warping to ${target.name}`;
       root.classList.add('is-warping');
       if (sky && !reduceMotion.matches) {
-        await sky.warp(1500);
+        // Leave on time even if the browser stops sending animation frames mid-warp.
+        await Promise.race([sky.warp(1500), new Promise((done) => setTimeout(done, 2200))]);
       }
       window.location.assign(target.url);
     });
@@ -193,6 +237,7 @@ const first = brands[0];
 
   .hero {
     position: relative;
+    min-height: 100vh;
     min-height: 100svh;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -234,6 +279,7 @@ const first = brands[0];
 
   .close {
     position: relative;
+    min-height: 100vh;
     min-height: 100svh;
     display: grid;
     align-content: center;
