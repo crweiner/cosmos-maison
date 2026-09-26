@@ -11,6 +11,14 @@
   --gold-bright: #f2c47a;
   --rust: #c74d38;
   --starlight: #ffffff;
+  --ink-edge: rgb(237 230 218 / 0.5);
+  --void-wash: rgb(4 6 11 / 0.25);
+  --scrollbar: #2a3a3e;
+
+  /* Legibility over the sky: a soft pool of void behind text, by size. */
+  --scrim-display: 0 2px 24px rgb(4 6 11 / 0.85);
+  --scrim-text: 0 2px 18px rgb(4 6 11 / 0.9);
+  --scrim-label: 0 1px 10px rgb(4 6 11 / 0.9);
 
   --font-display: 'Unbounded Variable', 'Unbounded', ui-sans-serif, sans-serif;
   --font-text: 'Geologica Variable', 'Geologica', ui-sans-serif, sans-serif;
@@ -33,7 +41,7 @@
 html {
   background: var(--void);
   scroll-behavior: smooth;
-  scrollbar-color: #2a3a3e var(--void);
+  scrollbar-color: var(--scrollbar) var(--void);
   scrollbar-width: thin;
   -webkit-text-size-adjust: 100%;
 }
@@ -201,7 +209,7 @@ svg {
   line-height: 1.05;
   letter-spacing: -0.03em;
   text-wrap: balance;
-  text-shadow: 0 2px 24px rgb(4 6 11 / 0.85);
+  text-shadow: var(--scrim-display);
 }
 
 /* ---- Buttons: plate labels, not pills ---------------------------------- */
@@ -263,9 +271,9 @@ svg {
 }
 
 .btn--explore {
-  border-color: rgb(237 230 218 / 0.5);
+  border-color: var(--ink-edge);
   color: var(--ink);
-  background: rgb(4 6 11 / 0.25);
+  background: var(--void-wash);
 }
 
 .btn--explore:hover {
