@@ -24,9 +24,10 @@ import Icon from '../components/Icon.astro';
   .lost {
     min-height: 100svh;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: end;
     gap: 1.25rem;
-    padding: 6rem var(--gutter) clamp(3.5rem, 9vh, 7rem);
+    padding: 6rem var(--gutter-right) clamp(3.5rem, 9vh, 7rem) var(--gutter-left);
     max-width: 48rem;
   }
 

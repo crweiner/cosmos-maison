@@ -46,9 +46,10 @@ const logoH = 48;
     min-height: 100svh;
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    column-gap: 1.5rem;
+    /* Viewport-relative so enlarged text can never make the gaps outgrow the screen. */
+    column-gap: min(1.5rem, 1.6vw);
     align-items: center;
-    padding: clamp(3rem, 12vh, 6rem) var(--gutter);
+    padding: clamp(3rem, 12vh, 6rem) var(--gutter-right) clamp(3rem, 12vh, 6rem) var(--gutter-left);
   }
 
   .stop__plate {
@@ -104,18 +105,25 @@ const logoH = 48;
     color: var(--ink);
   }
 
+  /*
+   * Each verse stays on one line at default sizes (the type is sized from the
+   * plate's width). If enlarged text forces a wrap, the continuation hangs
+   * under the verse so the three lines still read as three.
+   */
   .stop__haiku span {
+    --step: 0em;
     display: block;
-    white-space: nowrap;
+    padding-left: calc(var(--step) + 1em);
+    text-indent: -1em;
   }
 
   /* The haiku steps down the plate like a hand-set poem. */
   .stop__haiku span:nth-child(2) {
-    padding-left: 1.2em;
+    --step: 1.2em;
   }
 
   .stop__haiku span:nth-child(3) {
-    padding-left: 0.6em;
+    --step: 0.6em;
   }
 
   .stop__link {
@@ -135,6 +143,16 @@ const logoH = 48;
     transition:
       color 240ms var(--ease-out),
       border-color 240ms var(--ease-out);
+  }
+
+  /* A domain has no break point; let it break only if it truly cannot fit. */
+  .stop__link span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .stop__link {
+    max-width: 100%;
   }
 
   .stop__link :global(svg) {

@@ -36,7 +36,8 @@ const targets = trackedTargets('warp-link');
     display: grid;
     align-content: center;
     gap: 1rem;
-    padding: 6rem var(--gutter);
+    grid-template-columns: minmax(0, 1fr);
+    padding: 6rem var(--gutter-right) 6rem var(--gutter-left);
     max-width: 40rem;
     text-shadow: 0 2px 18px rgb(4 6 11 / 0.9);
   }

@@ -21,7 +21,7 @@ const first = brands[0];
   <main id="main">
     <section class="hero" id="top" aria-labelledby="hero-title" data-scene={JSON.stringify(heroGalaxy)} data-hero>
       <div class="hero__copy">
-        <h1 id="hero-title">Welcome to our&nbsp;Cosmos</h1>
+        <h1 id="hero-title">Welcome to our Cosmos</h1>
         <p class="hero__lede">Explore our full galaxy of products</p>
         <div class="hero__actions">
           <a class="btn btn--warp" href="/warp/" data-warp>
@@ -176,10 +176,13 @@ const first = brands[0];
     left: 0;
     right: 0;
     z-index: 5;
-    padding: clamp(1.5rem, 2.6vw, 2.5rem) var(--gutter);
+    padding: max(clamp(1.5rem, 2.6vw, 2.5rem), env(safe-area-inset-top)) var(--gutter-right) 0 var(--gutter-left);
   }
 
   .masthead__mark {
+    display: inline-block;
+    padding-block: 0.5rem;
+    margin-block: -0.5rem;
     text-decoration: none;
     color: var(--ink);
   }
@@ -188,8 +191,9 @@ const first = brands[0];
     position: relative;
     min-height: 100svh;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-items: end;
-    padding: 7rem var(--gutter) clamp(3.5rem, 9vh, 7rem);
+    padding: 7rem var(--gutter-right) clamp(3.5rem, 9vh, 7rem) var(--gutter-left);
   }
 
   .hero__copy {
@@ -201,7 +205,7 @@ const first = brands[0];
     margin: 0 0 1.25rem;
     font-family: var(--font-display);
     font-weight: 300;
-    font-size: clamp(2.4rem, min(0.9rem + 6.2vw, 12.5vh), 6rem);
+    font-size: clamp(min(2.4rem, 11vw), min(0.9rem + 6.2vw, 12.5vh), 6rem);
     line-height: 1.02;
     letter-spacing: -0.035em;
     max-width: 11ch;
@@ -231,7 +235,7 @@ const first = brands[0];
     align-content: center;
     justify-items: center;
     gap: 2.5rem;
-    padding: 6rem var(--gutter) 34vh;
+    padding: 6rem var(--gutter-right) 34vh var(--gutter-left);
     text-align: center;
   }
 
@@ -243,8 +247,8 @@ const first = brands[0];
   /* Plate designation, set beside the lower-left registration mark. */
   .plate-id {
     position: fixed;
-    left: calc(clamp(0.75rem, 1.6vw, 1.5rem) + 28px);
-    bottom: clamp(0.75rem, 1.6vw, 1.5rem);
+    left: calc(max(clamp(0.75rem, 1.6vw, 1.5rem), env(safe-area-inset-left)) + 28px);
+    bottom: max(clamp(0.75rem, 1.6vw, 1.5rem), env(safe-area-inset-bottom));
     z-index: 5;
     margin: 0;
     font-size: 0.8125rem;
@@ -252,6 +256,17 @@ const first = brands[0];
     transform: translateY(40%);
     transition: opacity 400ms var(--ease-out);
     pointer-events: none;
+  }
+
+  /*
+   * em media queries follow the visitor's text-size setting: on narrow screens
+   * or with enlarged text the pinned caption would sit on the haiku, and the
+   * stop index already shows the position.
+   */
+  @media (max-width: 23em) {
+    .plate-id {
+      display: none;
+    }
   }
 
   :global(html.at-top) .plate-id,
@@ -262,7 +277,7 @@ const first = brands[0];
   .colophon {
     position: relative;
     z-index: 5;
-    padding: 0 var(--gutter) clamp(2rem, 4vw, 3rem);
+    padding: 0 var(--gutter-right) max(clamp(2rem, 4vw, 3rem), env(safe-area-inset-bottom)) var(--gutter-left);
     text-align: center;
   }
 
@@ -277,7 +292,7 @@ const first = brands[0];
   .warp-status {
     position: fixed;
     left: 50%;
-    bottom: clamp(2.5rem, 8vh, 5rem);
+    bottom: max(clamp(2.5rem, 8vh, 5rem), calc(env(safe-area-inset-bottom) + 1.5rem));
     z-index: 30;
     margin: 0;
     transform: translateX(-50%);
@@ -288,7 +303,8 @@ const first = brands[0];
     color: var(--starlight);
     /* Stays legible as the plate burns from black to white. */
     mix-blend-mode: difference;
-    white-space: nowrap;
+    max-width: calc(100vw - 2 * var(--gutter));
+    text-align: center;
     opacity: 0;
     transition: opacity 500ms var(--ease-out) 250ms;
     pointer-events: none;

@@ -16,6 +16,9 @@
   --font-text: 'Geologica Variable', 'Geologica', ui-sans-serif, sans-serif;
 
   --gutter: clamp(1rem, 0.4rem + 3vw, 3.5rem);
+  /* Horizontal gutters that also clear a landscape notch. */
+  --gutter-left: max(var(--gutter), env(safe-area-inset-left));
+  --gutter-right: max(var(--gutter), env(safe-area-inset-right));
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   color-scheme: dark;
@@ -149,7 +152,12 @@ svg {
 /* Plate registration marks at the four corners of the viewport. */
 .registration {
   position: fixed;
-  inset: clamp(0.75rem, 1.6vw, 1.5rem);
+  /* Clear of notches and rounded corners on phones. */
+  inset:
+    max(clamp(0.75rem, 1.6vw, 1.5rem), env(safe-area-inset-top))
+    max(clamp(0.75rem, 1.6vw, 1.5rem), env(safe-area-inset-right))
+    max(clamp(0.75rem, 1.6vw, 1.5rem), env(safe-area-inset-bottom))
+    max(clamp(0.75rem, 1.6vw, 1.5rem), env(safe-area-inset-left));
   z-index: 3;
   pointer-events: none;
 }
@@ -189,7 +197,7 @@ svg {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: clamp(2rem, 1rem + 4vw, 4.25rem);
+  font-size: clamp(min(2rem, 9vw), 1rem + 4vw, 4.25rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
   text-wrap: balance;
@@ -214,13 +222,20 @@ svg {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-decoration: none;
-  white-space: nowrap;
+  /* One line at default sizes; wraps rather than overflowing when text is enlarged. */
+  max-width: 100%;
+  text-wrap: balance;
   cursor: pointer;
   transition:
     background-color 240ms var(--ease-out),
     border-color 240ms var(--ease-out),
     color 240ms var(--ease-out),
     transform 160ms var(--ease-out);
+}
+
+.btn span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .btn svg {

@@ -16,13 +16,13 @@ colors:
 typography:
   display:
     fontFamily: "'Unbounded Variable', 'Unbounded', ui-sans-serif, sans-serif"
-    fontSize: "clamp(2.4rem, min(0.9rem + 6.2vw, 12.5vh), 6rem)"
+    fontSize: "clamp(min(2.4rem, 11vw), min(0.9rem + 6.2vw, 12.5vh), 6rem)"
     fontWeight: 300
     lineHeight: 1.02
     letterSpacing: "-0.035em"
   headline:
     fontFamily: "'Unbounded Variable', 'Unbounded', ui-sans-serif, sans-serif"
-    fontSize: "clamp(2rem, 1rem + 4vw, 4.25rem)"
+    fontSize: "clamp(min(2rem, 9vw), 1rem + 4vw, 4.25rem)"
     fontWeight: 300
     lineHeight: 1.05
     letterSpacing: "-0.03em"
