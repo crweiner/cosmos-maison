@@ -1,5 +1,5 @@
 /**
- * The Cosmos family. Each entry becomes one landing stop on the home page and
+ * Automattic's constellation of brands. Each entry becomes one landing stop on the home page and
  * one possible destination for "Warp to a random Cosmos". Add a brand here and
  * both the page and the warp pick it up.
  */
@@ -29,6 +29,8 @@ export interface Brand {
   logoRatio: number;
   /** Optical size correction so marks with padding read at the same weight. */
   logoScale: number;
+  /** One plain line saying what the product is: a description, never a claim. */
+  tagline: string;
   haiku: [string, string, string];
   galaxy: GalaxyShape;
 }
@@ -42,6 +44,7 @@ export const brands: Brand[] = [
     logo: '/logos/tumblr.svg',
     logoRatio: 73 / 15,
     logoScale: 1,
+    tagline: 'Post, reblog and follow what you love',
     haiku: ['Reblogged into light', 'a million small obsessions', 'orbit the same star'],
     galaxy: { arms: 2, wind: 2.6, tilt: 0.55, angle: -0.5, warmth: 0.35, x: 0.7, y: 0.5 },
   },
@@ -53,6 +56,7 @@ export const brands: Brand[] = [
     logo: '/logos/day-one.svg',
     logoRatio: 97 / 15,
     logoScale: 0.92,
+    tagline: 'A journal for capturing life as you live it',
     haiku: ["Write down tonight's sky", 'years from now the same small light', 'reaches you again'],
     galaxy: { arms: 3, wind: 3.4, tilt: 0.3, angle: 0.4, warmth: 0.7, x: 0.3, y: 0.5 },
   },
@@ -64,6 +68,7 @@ export const brands: Brand[] = [
     logo: '/logos/pocket-casts.svg',
     logoRatio: 76 / 15,
     logoScale: 1,
+    tagline: 'A podcast player for all your shows',
     haiku: ['Voices in the dark', 'travel with you, episode', 'after episode'],
     galaxy: { arms: 2, wind: 1.9, tilt: 0.95, angle: 0.25, warmth: 0.85, x: 0.7, y: 0.5 },
   },
@@ -75,6 +80,7 @@ export const brands: Brand[] = [
     logo: '/logos/mesh.svg',
     logoRatio: 66 / 15,
     logoScale: 1,
+    tagline: 'A personal rolodex for the people in your life',
     haiku: ['Every name, a star;', 'the constellation you keep', 'by remembering'],
     galaxy: { arms: 4, wind: 2.2, tilt: 0.2, angle: -0.2, warmth: 0.2, x: 0.3, y: 0.5 },
   },
@@ -86,6 +92,7 @@ export const brands: Brand[] = [
     logo: '/logos/spacefast.svg',
     logoRatio: 152 / 28.9062,
     logoScale: 1.05,
+    tagline: 'A home on the web for what you and your agents make',
     haiku: ['Something newly made', 'launched to a live address', 'a new light goes on'],
     galaxy: { arms: 2, wind: 3.9, tilt: 0.7, angle: -0.9, warmth: 0.5, x: 0.7, y: 0.5 },
   },
@@ -97,6 +104,7 @@ export const brands: Brand[] = [
     logo: '/logos/beeper.svg',
     logoRatio: 73 / 15,
     logoScale: 1,
+    tagline: 'All your chats in one app',
     haiku: ['Scattered signals merge', 'every chat in one bright sky,', 'one place to answer'],
     galaxy: { arms: 5, wind: 1.6, tilt: 0.4, angle: 0.8, warmth: 0.45, x: 0.3, y: 0.5 },
   },

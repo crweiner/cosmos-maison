@@ -10,7 +10,7 @@ const first = brands[0];
 
 <Base
   title="Welcome to our Cosmos · cosmos.maison"
-  description="Explore our full galaxy of products: Tumblr, Day One, Pocket Casts, Me.sh, Spacefast and Beeper. Or warp to a random Cosmos."
+  description="Automattic's constellation of brands: Tumblr, Day One, Pocket Casts, Me.sh, Spacefast and Beeper. Or warp to a random one."
   sky="live"
 >
   <canvas slot="sky" class="sky" id="sky" aria-hidden="true"></canvas>
@@ -23,7 +23,7 @@ const first = brands[0];
     <section class="hero" id="top" aria-labelledby="hero-title" data-scene={JSON.stringify(heroGalaxy)} data-hero>
       <div class="hero__copy">
         <h1 id="hero-title">Welcome to our Cosmos</h1>
-        <p class="hero__lede">Explore our full galaxy of products</p>
+        <p class="hero__lede">Explore Automattic's constellation of brands</p>
         <div class="hero__actions">
           <a class="btn btn--warp" href="/warp/" data-warp>
             <span>Warp to a random Cosmos</span>
@@ -59,7 +59,7 @@ const first = brands[0];
   <p class="plate-id caption" aria-hidden="true"><span data-plate-id>Plate 1 / {brands.length}</span></p>
 
   <footer class="colophon">
-    <p class="caption">cosmos.maison · The Cosmos family, part of Automattic</p>
+    <p class="caption">cosmos.maison · A constellation of brands from Automattic</p>
   </footer>
 
   <p slot="overlay" class="warp-status" role="status" aria-live="polite"></p>
@@ -263,7 +263,8 @@ const first = brands[0];
 
   .hero__lede {
     margin: 0 0 2.5rem;
-    max-width: 30ch;
+    max-width: 34ch;
+    text-wrap: balance;
     font-size: clamp(1.15rem, 0.95rem + 0.8vw, 1.5rem);
     font-weight: 300;
     line-height: 1.4;

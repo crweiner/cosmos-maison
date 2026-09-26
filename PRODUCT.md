@@ -12,20 +12,20 @@ Astro, hosted on Automattic's Spacefast. This replaces the current Cloudflare Wo
 
 ## Users
 
-The general public. They reach cosmos.maison from outside links and are curious enough to click. Some want a quick surprise and will take the random warp straight away. Others want to browse and learn which products belong to Automattic's Cosmos family.
+The general public. They reach cosmos.maison from outside links and are curious enough to click. Some want a quick surprise and will take the random warp straight away. Others want to browse and learn which products belong to Automattic's constellation of brands.
 
 ## Product Purpose
 
-cosmos.maison is the front door to Automattic's Cosmos family of consumer brands. It does two jobs:
+cosmos.maison is the front door to Automattic's constellation of consumer brands (the Cosmos brands). It does two jobs:
 
 1. **Random warp.** An "I'm Feeling Lucky"-style action that sends the visitor straight to the website of one Cosmos company, chosen at random.
-2. **Exploration.** A single scrolling page with a stop for each Cosmos brand, so visitors can see the whole family and pick one themselves.
+2. **Exploration.** A single scrolling page with a stop for each Cosmos brand, so visitors can see the whole constellation and pick one themselves.
 
 A visit succeeds when the visitor leaves for a Cosmos brand's site, whether through the warp or through a brand stop.
 
 ## Positioning
 
-This is the only place that presents Automattic's Cosmos brands together as one family, and the only one that offers a warp to a random member of it.
+This is the only place that presents Automattic's Cosmos brands together as one constellation, and the only one that offers a warp to a random member of it.
 
 ## Operating Context
 
@@ -37,7 +37,7 @@ This is the only place that presents Automattic's Cosmos brands together as one 
 ## Capabilities and Constraints
 
 - Home page title: **"Welcome to our Cosmos"**.
-- Supporting line: **"Explore our full galaxy of products"**.
+- Supporting line: **"Explore Automattic's constellation of brands"**. Visible copy calls the group a "constellation", never a "family".
 - Primary actions: **"Warp to a random Cosmos"** (sends the visitor straight to a random Cosmos brand's site) and **"I want to explore"** (scrolls down to the brand stops).
 - Each brand stop shows that brand's logo and an original haiku written for that company.
 - Every outbound link carries `utm_source=cosmos.maison&utm_medium=referral&utm_campaign=cosmos` plus `utm_content` naming the path (`warp`, `stop`, `warp-link`, `warp-list`), so brand logs credit cosmos.maison. Tagging lives in `referral()` in `src/data/brands.ts`; never link out without it.
@@ -63,7 +63,7 @@ Each brand's own name and logo must be used as that brand publishes them.
 ## Product Principles
 
 1. **One click to somewhere real.** Both paths end on a real Cosmos brand's site, and the warp never feels slower than a plain link.
-2. **The family, not a sales pitch.** Each brand stop introduces the brand and links out. It makes no claims about the brand.
+2. **The constellation, not a sales pitch.** Each brand stop introduces the brand with one plain line saying what it is, then links out. It makes no claims about the brand.
 3. **Wonder without friction.** The galaxy sets the mood, but the title, the text and both actions stay readable and usable at all times.
 4. **Built to grow.** Add each new brand or page as data plus a reusable template. Never hand-build a one-off section.
 

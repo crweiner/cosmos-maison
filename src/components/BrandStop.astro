@@ -30,6 +30,7 @@ const logoH = 48;
         decoding="async"
       />
     </h2>
+    <p class="stop__tagline">{brand.tagline}</p>
     <p class="stop__haiku">
       {brand.haiku.map((line) => <span>{line}</span>)}
     </p>
@@ -83,8 +84,19 @@ const logoH = 48;
   }
 
   .stop__name {
-    margin: 0 0 clamp(1.25rem, 4vh, 2rem);
+    margin: 0 0 clamp(0.75rem, 2.5vh, 1.25rem);
     line-height: 0;
+  }
+
+  /* What the product is, in plain words: quiet, so the haiku stays the voice. */
+  .stop__tagline {
+    margin: 0 0 clamp(1.25rem, 4vh, 2rem);
+    max-width: 34ch;
+    font-size: 1.0625rem;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    text-wrap: balance;
   }
 
   .stop__name img {
@@ -195,8 +207,8 @@ const logoH = 48;
   @media (max-width: 759px), (orientation: portrait) and (max-width: 1099px) {
     .stop {
       align-items: end;
-      padding-top: 60vh;
-      padding-top: 60svh;
+      padding-top: 54vh;
+      padding-top: 54svh;
       padding-bottom: clamp(3.5rem, 8vh, 6rem);
     }
 

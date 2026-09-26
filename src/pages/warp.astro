@@ -7,12 +7,11 @@ const targets = trackedTargets('warp-link');
 ---
 
 <Base
-  title="Warping to a random Cosmos · cosmos.maison"
-  description="A shareable link that lands on one of Automattic's Cosmos brands at random."
+  title="Pick a star · cosmos.maison"
+  description="A link that warps you to one of Automattic's constellation of brands at random."
 >
   <main id="main" class="warp-page">
-    <h1 class="headline">Warping to a random Cosmos</h1>
-    <p class="warp-page__note">If nothing happens, choose a destination:</p>
+    <h1 class="headline">Pick a star from our constellation</h1>
     <ul>
       {list.map((t) => <li><a href={t.url}>{t.name}</a></li>)}
     </ul>
@@ -54,10 +53,6 @@ const targets = trackedTargets('warp-link');
     margin-bottom: 0.5rem;
   }
 
-  .warp-page__note {
-    margin: 0;
-    color: var(--ink-soft);
-  }
 
   ul {
     margin: 0;
