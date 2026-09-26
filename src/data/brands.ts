@@ -12,8 +12,6 @@ export interface GalaxyShape {
   tilt: number;
   /** On-screen rotation of the disk's major axis, radians. */
   angle: number;
-  /** Rotation direction, 1 or -1. */
-  spin: 1 | -1;
   /** Balance of the narrowband palette: 0 = oxygen teal, 1 = hydrogen gold. */
   warmth: number;
   /** Where the core sits in the viewport, 0..1 on each axis (desktop layout). */
@@ -45,7 +43,7 @@ export const brands: Brand[] = [
     logoRatio: 73 / 15,
     logoScale: 1,
     haiku: ['Reblogged into light', 'a million small obsessions', 'orbit the same star'],
-    galaxy: { arms: 2, wind: 2.6, tilt: 0.55, angle: -0.5, spin: 1, warmth: 0.35, x: 0.7, y: 0.5 },
+    galaxy: { arms: 2, wind: 2.6, tilt: 0.55, angle: -0.5, warmth: 0.35, x: 0.7, y: 0.5 },
   },
   {
     slug: 'day-one',
@@ -56,7 +54,7 @@ export const brands: Brand[] = [
     logoRatio: 97 / 15,
     logoScale: 0.92,
     haiku: ["Write down tonight's sky", 'years from now the same small light', 'reaches you again'],
-    galaxy: { arms: 3, wind: 3.4, tilt: 0.3, angle: 0.4, spin: -1, warmth: 0.7, x: 0.3, y: 0.5 },
+    galaxy: { arms: 3, wind: 3.4, tilt: 0.3, angle: 0.4, warmth: 0.7, x: 0.3, y: 0.5 },
   },
   {
     slug: 'pocket-casts',
@@ -67,7 +65,7 @@ export const brands: Brand[] = [
     logoRatio: 76 / 15,
     logoScale: 1,
     haiku: ['Voices in the dark', 'travel with you, episode', 'after episode'],
-    galaxy: { arms: 2, wind: 1.9, tilt: 0.95, angle: 0.25, spin: 1, warmth: 0.85, x: 0.7, y: 0.5 },
+    galaxy: { arms: 2, wind: 1.9, tilt: 0.95, angle: 0.25, warmth: 0.85, x: 0.7, y: 0.5 },
   },
   {
     slug: 'mesh',
@@ -78,7 +76,7 @@ export const brands: Brand[] = [
     logoRatio: 66 / 15,
     logoScale: 1,
     haiku: ['Every name, a star;', 'the constellation you keep', 'by remembering'],
-    galaxy: { arms: 4, wind: 2.2, tilt: 0.2, angle: -0.2, spin: -1, warmth: 0.2, x: 0.3, y: 0.5 },
+    galaxy: { arms: 4, wind: 2.2, tilt: 0.2, angle: -0.2, warmth: 0.2, x: 0.3, y: 0.5 },
   },
   {
     slug: 'spacefast',
@@ -89,7 +87,7 @@ export const brands: Brand[] = [
     logoRatio: 152 / 28.9062,
     logoScale: 1.05,
     haiku: ['Something newly made', 'launched to a live address', 'a new light goes on'],
-    galaxy: { arms: 2, wind: 3.9, tilt: 0.7, angle: -0.9, spin: 1, warmth: 0.5, x: 0.7, y: 0.5 },
+    galaxy: { arms: 2, wind: 3.9, tilt: 0.7, angle: -0.9, warmth: 0.5, x: 0.7, y: 0.5 },
   },
   {
     slug: 'beeper',
@@ -100,7 +98,7 @@ export const brands: Brand[] = [
     logoRatio: 73 / 15,
     logoScale: 1,
     haiku: ['Scattered signals merge', 'every chat in one bright sky,', 'one place to answer'],
-    galaxy: { arms: 5, wind: 1.6, tilt: 0.4, angle: 0.8, spin: -1, warmth: 0.45, x: 0.3, y: 0.5 },
+    galaxy: { arms: 5, wind: 1.6, tilt: 0.4, angle: 0.8, warmth: 0.45, x: 0.3, y: 0.5 },
   },
 ];
 
@@ -110,7 +108,7 @@ export const heroGalaxy: GalaxyShape = {
   wind: 2.8,
   tilt: 0.62,
   angle: -0.42,
-  spin: 1,
+ 
   warmth: 0.55,
   x: 0.64,
   y: 0.4,

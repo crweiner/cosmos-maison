@@ -35,7 +35,6 @@ uniform float u_arms;
 uniform float u_wind;
 uniform float u_tilt;
 uniform float u_angle;
-uniform float u_spin;
 uniform float u_warmth;
 uniform vec2 u_center;
 uniform float u_scale;
@@ -105,7 +104,9 @@ void main() {
 
   // Nearly rigid rotation with a gentle differential term.
   float omega = 0.035 * (0.82 + 0.18 * 0.3 / (r + 0.3));
-  theta -= u_spin * u_time * omega;
+  // Arms open toward +theta, so turning toward -theta keeps them trailing:
+  // every galaxy winds its arms inward, as real spirals do.
+  theta -= u_time * omega;
 
   float h = (a_seed.z - 0.5) * 0.09 * (1.0 - r) ;
   if (a_kind > 1.5 && a_kind < 2.5) h *= 3.5;
@@ -445,7 +446,6 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     wind: u('u_wind'),
     tilt: u('u_tilt'),
     angle: u('u_angle'),
-    spin: u('u_spin'),
     warmth: u('u_warmth'),
     center: u('u_center'),
     scale: u('u_scale'),
@@ -598,7 +598,6 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     gl!.uniform1f(U.wind, s.wind);
     gl!.uniform1f(U.tilt, s.tilt);
     gl!.uniform1f(U.angle, s.angle);
-    gl!.uniform1f(U.spin, s.spin);
     gl!.uniform1f(U.warmth, s.warmth);
     // Drift with the scroll so the galaxy travels with its section.
     gl!.uniform2f(U.center, L.x, L.y + offset * 0.35 * dpr);
