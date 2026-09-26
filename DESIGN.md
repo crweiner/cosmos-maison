@@ -181,7 +181,7 @@ Breakpoints observed: 420px (compact buttons), 759px (stacking), 1099px (mid-wid
 
 ## Elevation & Depth
 
-The interface is flat. Depth belongs to the sky: additive star light tone-mapped against the void, multiplicative dust that tints rather than punches black, a grain overlay at 10% opacity in overlay blend, and a fixed layer order (fallback plate, sky canvas, grain, registration, page, fixed chrome, warp overlay).
+The interface is flat. Depth belongs to the sky: additive star light tone-mapped against the void, multiplicative dust that tints rather than punches black, photographic grain baked into the live sky's final pass (still pages without the live sky use a 10% overlay-blend grain layer instead), and a fixed layer order (fallback plate, sky canvas, grain on still pages only, registration, page, fixed chrome, warp overlay). The sky renders its soft gas and dust at half resolution, holds the canvas to about 4.2 million pixels, eases to 30fps when nothing is moving, and steps its own resolution down if frames run long; none of this may change how the plate reads.
 
 The only shadows are legibility scrims: soft void-colored text-shadows under text that sits on the sky (0 2px 24px at 0.8 to 0.85 alpha for titles, 0 2px 18px for brand plates, 0 1px 10px for index labels). They darken, never glow.
 

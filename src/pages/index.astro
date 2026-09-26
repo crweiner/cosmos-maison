@@ -11,6 +11,7 @@ const first = brands[0];
 <Base
   title="Welcome to our Cosmos · cosmos.maison"
   description="Explore our full galaxy of products: Tumblr, Day One, Pocket Casts, Me.sh, Spacefast and Beeper. Or warp to a random Cosmos."
+  sky="live"
 >
   <canvas slot="sky" class="sky" id="sky" aria-hidden="true"></canvas>
 
@@ -82,7 +83,10 @@ const first = brands[0];
 
   const sky = startGalaxy(canvas, scenes);
   if (sky) root.classList.add('has-sky');
-  else canvas.remove();
+  else {
+    canvas.remove();
+    root.classList.add('no-sky');
+  }
 
   // --- Warp: an "I'm Feeling Lucky" jump to one Cosmos brand ------------------
   type Target = { name: string; url: string };

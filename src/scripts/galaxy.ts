@@ -43,6 +43,7 @@ uniform vec2 u_pointer;
 uniform float u_pull;
 uniform float u_warp;
 uniform float u_headroom;
+uniform float u_pointScale;
 
 varying vec4 v_color;
 varying float v_kind;
@@ -132,13 +133,13 @@ void main() {
   float sizeScale = clamp(u_scale / (520.0 * u_dpr), 0.6, 1.5);
 
   if (u_pass == ${PASS_GAS}) {
-    gl_PointSize = (40.0 + a_seed.w * 70.0) * u_dpr * sizeScale;
+    gl_PointSize = (40.0 + a_seed.w * 70.0) * u_dpr * sizeScale * u_pointScale;
     vec3 c = mix(TEAL, GOLD, clamp(u_warmth * 0.5 + (1.0 - r) * 1.1 - 0.62, 0.0, 1.0));
     if (a_seed.w > 0.88) c = RUST;
     float a = 0.045 * (1.0 - r * 0.6);
     if (a_kind > 1.5) {
       // Bulge glow: a few broad, warm sprites around the core.
-      gl_PointSize = (120.0 + a_seed.w * 160.0) * u_dpr * sizeScale;
+      gl_PointSize = (120.0 + a_seed.w * 160.0) * u_dpr * sizeScale * u_pointScale;
       c = mix(GOLD, GOLD_PALE, a_seed.w);
       a = 0.04;
     }
@@ -147,7 +148,7 @@ void main() {
   }
 
   if (u_pass == ${PASS_DUST}) {
-    gl_PointSize = (16.0 + a_seed.w * 34.0) * u_dpr * sizeScale;
+    gl_PointSize = (16.0 + a_seed.w * 34.0) * u_dpr * sizeScale * u_pointScale;
     // Absorption strength; lanes stay off the core rim and fade at the edge.
     float a = 0.32 * smoothstep(0.4, 0.62, r) * (1.0 - smoothstep(0.75, 1.0, r));
     v_color = vec4(0.62, 0.3, 0.2, a * u_alpha);
@@ -235,7 +236,7 @@ void main() {
 `;
 
 const RESOLVE_FRAG = /* glsl */ `
-precision mediump float;
+precision highp float;
 uniform sampler2D u_tex;
 uniform float u_headroom;
 uniform vec3 u_void;
@@ -244,9 +245,34 @@ varying vec2 v_uv;
 void main() {
   vec3 c = texture2D(u_tex, v_uv).rgb / u_headroom;
   vec3 mapped = 1.0 - exp(-c * u_exposure);
-  gl_FragColor = vec4(u_void + (1.0 - u_void) * mapped, 1.0);
+  vec3 col = u_void + (1.0 - u_void) * mapped;
+  // Photographic grain, fixed per pixel (replaces a full-screen CSS blend layer).
+  float n = fract(sin(dot(floor(gl_FragCoord.xy), vec2(12.9898, 78.233))) * 43758.5453);
+  col += (n - 0.5) * 0.045 * (0.4 + col);
+  gl_FragColor = vec4(col, 1.0);
 }
 `;
+
+// Adds the half-resolution gas and dust buffer into the full-resolution light buffer.
+const COPY_FRAG = /* glsl */ `
+precision mediump float;
+uniform sampler2D u_tex;
+varying vec2 v_uv;
+void main() { gl_FragColor = vec4(texture2D(u_tex, v_uv).rgb, 1.0); }
+`;
+
+/*
+ * Quality steps, taken only when frames keep running long. Step 1 lowers the
+ * render resolution; step 2 lowers it further and thins the star field.
+ */
+const QUALITY = [
+  { res: 1, stars: 1 },
+  { res: 0.8, stars: 1 },
+  { res: 0.62, stars: 0.6 },
+];
+
+/** Canvas pixel budget: 4K and ultra-wide screens render slightly softer, never slower. */
+const MAX_PIXELS = 4.2e6;
 
 function rng(seed: number) {
   let s = seed >>> 0;
@@ -330,10 +356,12 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
   let prog: WebGLProgram;
   let quad: WebGLProgram;
   let resolveProg: WebGLProgram;
+  let copyProg: WebGLProgram;
   try {
     prog = compile(gl, VERT, FRAG);
     quad = compile(gl, QUAD_VERT, QUAD_FRAG);
     resolveProg = compile(gl, RESOLVE_VERT, RESOLVE_FRAG);
+    copyProg = compile(gl, RESOLVE_VERT, COPY_FRAG);
   } catch (err) {
     console.warn('[cosmos] galaxy disabled:', err);
     return null;
@@ -464,12 +492,21 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     exposure: gl.getUniformLocation(resolveProg, 'u_exposure'),
   };
   const headroomLoc = gl.getUniformLocation(prog, 'u_headroom');
+  const pointScaleLoc = gl.getUniformLocation(prog, 'u_pointScale');
+  const copyPos = gl.getAttribLocation(copyProg, 'a_pos');
+  const copyTexLoc = gl.getUniformLocation(copyProg, 'u_tex');
 
   // Offscreen light buffer: half-float where supported, else 8-bit with headroom.
   const halfExt = gl.getExtension('OES_texture_half_float');
   gl.getExtension('EXT_color_buffer_half_float');
+  const halfLinear = !!gl.getExtension('OES_texture_half_float_linear');
   const lightTex = gl.createTexture()!;
   const fbo = gl.createFramebuffer()!;
+  // Soft gas and dust render at half resolution: a quarter of the fill cost, same look.
+  const gasTex = gl.createTexture()!;
+  const gasFbo = gl.createFramebuffer()!;
+  let GW = 1;
+  let GH = 1;
   let texType: number = halfExt ? halfExt.HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
   let headroom = 1;
 
@@ -489,6 +526,18 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     }
     // 8-bit targets store light at reduced intensity so highlights have room.
     headroom = texType === gl!.UNSIGNED_BYTE ? 0.45 : 1;
+
+    GW = Math.max(1, Math.ceil(w / 2));
+    GH = Math.max(1, Math.ceil(h / 2));
+    const filter = texType === gl!.UNSIGNED_BYTE || halfLinear ? gl!.LINEAR : gl!.NEAREST;
+    gl!.bindTexture(gl!.TEXTURE_2D, gasTex);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, filter);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MAG_FILTER, filter);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_S, gl!.CLAMP_TO_EDGE);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_T, gl!.CLAMP_TO_EDGE);
+    gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA, GW, GH, 0, gl!.RGBA, texType, null);
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, gasFbo);
+    gl!.framebufferTexture2D(gl!.FRAMEBUFFER, gl!.COLOR_ATTACHMENT0, gl!.TEXTURE_2D, gasTex, 0);
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
   }
 
@@ -504,11 +553,18 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
   let time = 12; // start mid-rotation so the first frame is already composed
   let last = performance.now();
   let raf = 0;
+  let quality = 0;
+  let lastInput = performance.now();
+  let frameEma = 16.7;
+  let slowFrames = 0;
+  let drawn = 0;
+  let prevActive = true;
 
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75);
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
+    const budget = Math.sqrt(MAX_PIXELS / Math.max(1, w * h));
+    dpr = Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75, budget) * QUALITY[quality].res;
     W = Math.max(1, Math.round(w * dpr));
     H = Math.max(1, Math.round(h * dpr));
     if (canvas.width !== W || canvas.height !== H) {
@@ -591,7 +647,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     return { x: x * dpr, y: y * dpr, radius: radius * dpr };
   }
 
-  function drawScene(scene: Scene, weight: number, offset: number) {
+  function setScene(scene: Scene, weight: number, offset: number) {
     const s = scene.shape;
     const L = layout(scene);
     gl!.uniform1f(U.arms, s.arms);
@@ -603,7 +659,10 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     gl!.uniform2f(U.center, L.x, L.y + offset * 0.35 * dpr);
     gl!.uniform1f(U.scale, L.radius);
     gl!.uniform1f(U.alpha, weight);
+  }
 
+  function drawGas(scene: Scene, weight: number, offset: number) {
+    setScene(scene, weight, offset);
     gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
     gl!.uniform1i(U.pass, PASS_GAS);
     bindCloud(gas);
@@ -614,36 +673,29 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     gl!.uniform1i(U.pass, PASS_DUST);
     bindCloud(dust);
     gl!.drawArrays(gl!.POINTS, 0, dust.count);
+  }
 
+  function drawStars(scene: Scene, weight: number, offset: number) {
+    setScene(scene, weight, offset);
     gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
     gl!.uniform1i(U.pass, PASS_STARS);
     bindCloud(stars);
-    gl!.drawArrays(gl!.POINTS, 0, stars.count);
+    gl!.drawArrays(gl!.POINTS, 0, Math.floor(stars.count * QUALITY[quality].stars));
   }
 
-  function frame(now: number) {
-    raf = 0;
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    const still = reduceMotion.matches;
-    if (!still) time += dt * (1 + warp * warp * 40);
-
-    pull += (pullTarget - pull) * Math.min(1, dt * (pullTarget > pull ? 3 : 1.2));
-    if (still) pull = 0;
-
-    // Clear, or during the warp let the previous frame persist as a trail.
-    gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo);
+  /** Fade the bound buffer toward black: a full clear, or a partial one to leave warp trails. */
+  function fadeTarget(fade: number) {
     gl!.useProgram(quad);
-    gl!.enable(gl!.BLEND);
     gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA);
     gl!.bindBuffer(gl!.ARRAY_BUFFER, quadBuf);
     gl!.enableVertexAttribArray(quadPos);
     gl!.vertexAttribPointer(quadPos, 2, gl!.FLOAT, false, 0, 0);
-    const fade = warping ? Math.max(0.05, 1 - warp * 1.4) : 1;
     gl!.uniform4f(quadColor, 0, 0, 0, fade);
     gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
     gl!.disableVertexAttribArray(quadPos);
+  }
 
+  function setCommon() {
     gl!.useProgram(prog);
     gl!.uniform2f(U.res, W, H);
     gl!.uniform1f(U.dpr, dpr);
@@ -652,17 +704,80 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     gl!.uniform1f(U.pull, pull);
     gl!.uniform1f(U.warp, warp);
     gl!.uniform1f(headroomLoc, headroom);
+  }
 
-    // Backdrop field stars.
+  /** Step quality down if frames keep running long; never steps back up mid-visit. */
+  function adapt(interval: number, active: boolean) {
+    if (!active || !prevActive || warping || drawn < 90 || quality >= QUALITY.length - 1) return;
+    frameEma = frameEma * 0.93 + interval * 0.07;
+    slowFrames = frameEma > 24 ? slowFrames + 1 : 0;
+    if (slowFrames > 45) {
+      quality++;
+      slowFrames = 0;
+      frameEma = 16.7;
+      resize();
+    }
+  }
+
+  function frame(now: number) {
+    raf = 0;
+    const still = reduceMotion.matches;
+    // With no pointer, scroll or warp for a moment, the slow rotation runs at
+    // 30fps: it reads the same and costs half the GPU time.
+    const active = warping || now - lastInput < 2500;
+    if (!active && !still && now - last < 31) {
+      schedule();
+      return;
+    }
+    const interval = now - last;
+    const dt = Math.min(0.05, interval / 1000);
+    last = now;
+    adapt(interval, active);
+    prevActive = active;
+    drawn++;
+    if (!still) time += dt * (1 + warp * warp * 40);
+
+    pull += (pullTarget - pull) * Math.min(1, dt * (pullTarget > pull ? 3 : 1.2));
+    if (still) pull = 0;
+
+    // During the warp the previous frame persists as a trail instead of clearing.
+    const fade = warping ? Math.max(0.05, 1 - warp * 1.4) : 1;
+    const weights = sceneWeights().filter((w) => w.w > 0.002);
+    gl!.enable(gl!.BLEND);
+
+    // 1. Gas and dust, half resolution.
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, gasFbo);
+    gl!.viewport(0, 0, GW, GH);
+    fadeTarget(fade);
+    setCommon();
+    gl!.uniform1f(pointScaleLoc, 0.5);
+    for (const w of weights) drawGas(scenes[w.i], w.w, w.offset);
+
+    // 2. Stars, full resolution, over the backdrop and the upsampled gas.
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo);
+    gl!.viewport(0, 0, W, H);
+    fadeTarget(fade);
+    setCommon();
+    gl!.uniform1f(pointScaleLoc, 1);
     gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
     gl!.uniform1i(U.pass, PASS_FIELD);
     gl!.uniform1f(U.alpha, 1);
     bindCloud(field);
     gl!.drawArrays(gl!.POINTS, 0, field.count);
 
-    for (const w of sceneWeights()) {
-      if (w.w > 0.002) drawScene(scenes[w.i], w.w, w.offset);
-    }
+    gl!.useProgram(copyProg);
+    gl!.blendFunc(gl!.ONE, gl!.ONE);
+    gl!.activeTexture(gl!.TEXTURE0);
+    gl!.bindTexture(gl!.TEXTURE_2D, gasTex);
+    gl!.uniform1i(copyTexLoc, 0);
+    gl!.bindBuffer(gl!.ARRAY_BUFFER, quadBuf);
+    gl!.enableVertexAttribArray(copyPos);
+    gl!.vertexAttribPointer(copyPos, 2, gl!.FLOAT, false, 0, 0);
+    gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
+    gl!.disableVertexAttribArray(copyPos);
+
+    gl!.useProgram(prog);
+    for (const w of weights) drawStars(scenes[w.i], w.w, w.offset);
 
     gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
     gl!.uniform1i(U.pass, PASS_SPIKES);
@@ -670,8 +785,9 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     bindCloud(spikes);
     gl!.drawArrays(gl!.POINTS, 0, spikes.count);
 
-    // Resolve the light buffer to the screen through the tone curve.
+    // 3. Resolve the light buffer to the screen through the tone curve.
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
+    gl!.viewport(0, 0, W, H);
     gl!.disable(gl!.BLEND);
     gl!.useProgram(resolveProg);
     gl!.activeTexture(gl!.TEXTURE0);
@@ -696,6 +812,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
   }
 
   function invalidate() {
+    lastInput = performance.now();
     schedule();
   }
 
@@ -711,6 +828,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
     pointer.x = e.clientX;
     pointer.y = e.clientY;
     pullTarget = e.pointerType === 'touch' ? 1.3 : 1;
+    lastInput = performance.now();
     schedule();
   };
   const release = () => {
@@ -724,7 +842,7 @@ export function startGalaxy(canvas: HTMLCanvasElement, scenes: Scene[]): GalaxyC
   window.addEventListener('blur', release);
   window.addEventListener('scroll', invalidate, { passive: true });
   document.addEventListener('visibilitychange', () => {
-    last = performance.now();
+    last = lastInput = performance.now();
     schedule();
   });
   reduceMotion.addEventListener('change', invalidate);

@@ -129,9 +129,13 @@ svg {
 
 .sky-fallback {
   z-index: 0;
-  background:
-    url('/plate.webp') 64% 40% / cover no-repeat,
-    var(--void);
+  background: var(--void) 64% 40% / cover no-repeat;
+}
+
+/* The still plate downloads only where it shows: plate pages, or a failed live sky. */
+html[data-sky='plate'] .sky-fallback,
+html.no-sky .sky-fallback {
+  background-image: url('/plate.webp');
 }
 
 .sky {
@@ -149,12 +153,19 @@ svg {
 /* Photographic grain over everything drawn, beneath the text. */
 .grain {
   position: fixed;
-  inset: -50%;
+  inset: 0;
   z-index: 2;
   pointer-events: none;
+  display: none;
   opacity: 0.1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   mix-blend-mode: overlay;
+}
+
+/* The live sky bakes its grain into the render; only still pages need this layer. */
+html[data-sky='plate'] .grain,
+html.no-sky .grain {
+  display: block;
 }
 
 /* Plate registration marks at the four corners of the viewport. */

@@ -6,14 +6,19 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description: string;
+  /**
+   * live: the page runs the WebGL sky; the still plate loads only if that fails.
+   * plate: the page shows the still plate (and CSS grain) from the start.
+   */
+  sky?: 'live' | 'plate';
 }
 
-const { title, description } = Astro.props;
+const { title, description, sky = 'plate' } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-sky={sky}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -28,7 +33,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={new URL('/plate.webp', Astro.site)} />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preload" href="/plate.webp" as="image" fetchpriority="high" />
+    {sky === 'plate' && <link rel="preload" href="/plate.webp" as="image" fetchpriority="high" />}
+    {sky === 'live' && (
+      <noscript>
+        <style>{`.sky-fallback, .grain { display: block; } .sky-fallback { background-image: url('/plate.webp'); }`}</style>
+      </noscript>
+    )}
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
