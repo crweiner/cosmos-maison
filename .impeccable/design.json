@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-25T21:36:24.938Z",
+  "generatedAt": "2026-09-26T03:19:54.568Z",
   "title": "Design System: cosmos.maison",
   "extensions": {
     "colorMeta": {
@@ -47,6 +47,81 @@
           "oklch(72% 0.012 184)",
           "oklch(84% 0.012 184)",
           "oklch(95% 0.006 184)"
+        ]
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "canonical": "rgb(237 230 218 / 0.38)",
+        "tonalRamp": [
+          "oklch(15% 0.009 81)",
+          "oklch(25% 0.018 81)",
+          "oklch(35% 0.018 81)",
+          "oklch(48% 0.018 81)",
+          "oklch(60% 0.018 81)",
+          "oklch(72% 0.018 81)",
+          "oklch(84% 0.018 81)",
+          "oklch(95% 0.009 81)"
+        ]
+      },
+      "ink-edge": {
+        "role": "neutral",
+        "displayName": "Ink Edge",
+        "canonical": "rgb(237 230 218 / 0.5)",
+        "tonalRamp": [
+          "oklch(15% 0.009 81)",
+          "oklch(25% 0.018 81)",
+          "oklch(35% 0.018 81)",
+          "oklch(48% 0.018 81)",
+          "oklch(60% 0.018 81)",
+          "oklch(72% 0.018 81)",
+          "oklch(84% 0.018 81)",
+          "oklch(95% 0.009 81)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgb(237 230 218 / 0.22)",
+        "tonalRamp": [
+          "oklch(15% 0.009 81)",
+          "oklch(25% 0.018 81)",
+          "oklch(35% 0.018 81)",
+          "oklch(48% 0.018 81)",
+          "oklch(60% 0.018 81)",
+          "oklch(72% 0.018 81)",
+          "oklch(84% 0.018 81)",
+          "oklch(95% 0.009 81)"
+        ]
+      },
+      "void-wash": {
+        "role": "neutral",
+        "displayName": "Void Wash",
+        "canonical": "rgb(4 6 11 / 0.25)",
+        "tonalRamp": [
+          "oklch(15% 0.007 263)",
+          "oklch(25% 0.014 263)",
+          "oklch(35% 0.014 263)",
+          "oklch(48% 0.014 263)",
+          "oklch(60% 0.014 263)",
+          "oklch(72% 0.014 263)",
+          "oklch(84% 0.014 263)",
+          "oklch(95% 0.007 263)"
+        ]
+      },
+      "scrollbar-slate": {
+        "role": "neutral",
+        "displayName": "Scrollbar Slate",
+        "canonical": "oklch(33.6% 0.022 215)",
+        "tonalRamp": [
+          "oklch(15% 0.011 215)",
+          "oklch(25% 0.022 215)",
+          "oklch(35% 0.022 215)",
+          "oklch(48% 0.022 215)",
+          "oklch(60% 0.022 215)",
+          "oklch(72% 0.022 215)",
+          "oklch(84% 0.022 215)",
+          "oklch(95% 0.011 215)"
         ]
       },
       "teal": {
@@ -112,16 +187,16 @@
       "rust": {
         "role": "tertiary",
         "displayName": "Dust Rust",
-        "canonical": "oklch(53.9% 0.15 33)",
+        "canonical": "oklch(58% 0.16 32)",
         "tonalRamp": [
-          "oklch(15% 0.075 33)",
-          "oklch(25% 0.150 33)",
-          "oklch(35% 0.150 33)",
-          "oklch(48% 0.150 33)",
-          "oklch(60% 0.150 33)",
-          "oklch(72% 0.150 33)",
-          "oklch(84% 0.150 33)",
-          "oklch(95% 0.075 33)"
+          "oklch(15% 0.080 32)",
+          "oklch(25% 0.160 32)",
+          "oklch(35% 0.160 32)",
+          "oklch(48% 0.160 32)",
+          "oklch(60% 0.160 32)",
+          "oklch(72% 0.160 32)",
+          "oklch(84% 0.160 32)",
+          "oklch(95% 0.080 32)"
         ]
       },
       "starlight-white": {
@@ -138,36 +213,6 @@
           "oklch(84% 0.000 90)",
           "oklch(95% 0.000 90)"
         ]
-      },
-      "ink-faint": {
-        "role": "neutral",
-        "displayName": "Faint Ink",
-        "canonical": "rgb(237 230 218 / 0.38)",
-        "tonalRamp": [
-          "oklch(15% 0.009 81)",
-          "oklch(25% 0.018 81)",
-          "oklch(35% 0.018 81)",
-          "oklch(48% 0.018 81)",
-          "oklch(60% 0.018 81)",
-          "oklch(72% 0.018 81)",
-          "oklch(84% 0.018 81)",
-          "oklch(95% 0.009 81)"
-        ]
-      },
-      "hairline": {
-        "role": "neutral",
-        "displayName": "Hairline",
-        "canonical": "rgb(237 230 218 / 0.22)",
-        "tonalRamp": [
-          "oklch(15% 0.009 81)",
-          "oklch(25% 0.018 81)",
-          "oklch(35% 0.018 81)",
-          "oklch(48% 0.018 81)",
-          "oklch(60% 0.018 81)",
-          "oklch(72% 0.018 81)",
-          "oklch(84% 0.018 81)",
-          "oklch(95% 0.009 81)"
-        ]
       }
     },
     "typographyMeta": {
@@ -177,15 +222,15 @@
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Closing line, 404 and warp page titles."
+        "purpose": "One shared style for the closing line, the 404 title and the /warp/ title."
       },
       "title": {
         "displayName": "Lede",
-        "purpose": "Supporting line under the display title, in soft ink."
+        "purpose": "Supporting line under the display title, in soft ink; the warp status reuses its size."
       },
       "verse": {
         "displayName": "Verse",
-        "purpose": "Brand haikus, sized from the plate width, lines never wrap."
+        "purpose": "Brand haikus sized from the plate width: one line per verse at default size, hanging indent when enlarged text wraps. Fallback without container units: clamp(1rem, 0.9rem + 1.3vw, 2.5rem)."
       },
       "body": {
         "displayName": "Body",
@@ -193,28 +238,28 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Uppercase plate-label buttons and destination links."
+        "purpose": "Uppercase plate-label buttons and warp destinations (at 500)."
       },
       "caption": {
         "displayName": "Caption",
-        "purpose": "Uppercase annotations: masthead mark, colophon, index names, plate designation."
+        "purpose": "The one small step: masthead mark, colophon, plate designation, index names, brand-plate link, compact buttons."
       }
     },
     "shadows": [
       {
-        "name": "legibility-scrim-title",
-        "value": "0 2px 24px rgb(4 6 11 / 0.8)",
-        "purpose": "text-shadow under display and headline type on the sky (0.85 alpha on the close)."
+        "name": "scrim-display",
+        "value": "0 2px 24px rgb(4 6 11 / 0.85)",
+        "purpose": "text-shadow under the hero title and lede and every headline."
       },
       {
-        "name": "legibility-scrim-plate",
-        "value": "0 2px 18px rgb(4 6 11 / 0.85)",
-        "purpose": "text-shadow under brand plates."
+        "name": "scrim-text",
+        "value": "0 2px 18px rgb(4 6 11 / 0.9)",
+        "purpose": "text-shadow under brand plates and running text on the 404 and /warp/."
       },
       {
-        "name": "legibility-scrim-caption",
+        "name": "scrim-label",
         "value": "0 1px 10px rgb(4 6 11 / 0.9)",
-        "purpose": "text-shadow under stop index labels."
+        "purpose": "text-shadow under stop index names."
       }
     ],
     "motion": [
@@ -246,30 +291,58 @@
       {
         "name": "warp-exposure",
         "value": "1500ms",
-        "purpose": "Shutter-open warp: frame stops clearing, stars trail; page blurs out over 500ms, gold veil opens over 900ms after 700ms (cubic-bezier(0.7, 0, 0.84, 0)). Skipped under reduced motion."
+        "purpose": "Shutter-open warp: the frame stops clearing, rotation accelerates, stars trail and the tone-map exposure rises until the plate burns out to light (no CSS wash). Page and chrome blur out over 500ms; the warp status fades in over 500ms after 250ms. Departure is guaranteed by 2200ms. Skipped under reduced motion."
       },
       {
         "name": "pointer-gravity",
         "value": "~160 CSS px falloff",
         "purpose": "Stars near the pointer or touch lean toward it and settle back."
+      },
+      {
+        "name": "rotation",
+        "value": "trailing arms",
+        "purpose": "Every galaxy turns the same way with trailing arms; slow near-rigid rotation with a gentle differential term."
+      },
+      {
+        "name": "idle-pacing",
+        "value": "30fps after 2500ms without input",
+        "purpose": "Slow rotation runs at half rate when nothing is moving; full rate on pointer, scroll or warp."
+      },
+      {
+        "name": "render-budget",
+        "value": "~4.2M canvas pixels; gas and dust at half resolution; quality steps 1 / 0.8 / 0.62 resolution (last step 0.6x stars)",
+        "purpose": "Performance invariants that must not change how the plate reads. Steps down only, never back up mid-visit."
+      },
+      {
+        "name": "context-loss",
+        "value": "fallback to still plate; restart on restore",
+        "purpose": "A lost GPU context shows the still plate and CSS grain; webglcontextrestored boots a fresh canvas."
       }
     ],
     "breakpoints": [
       {
         "name": "compact",
-        "value": "420px"
+        "value": "max-width 420px"
       },
       {
         "name": "stack",
-        "value": "759px"
+        "value": "max-width 759px, or portrait up to 1099px"
       },
       {
         "name": "mid",
-        "value": "1099px"
+        "value": "max-width 1099px"
+      },
+      {
+        "name": "plate-id-hide",
+        "value": "max-width 23em"
       },
       {
         "name": "short-landscape",
         "value": "max-height 520px"
+      },
+      {
+        "name": "touch",
+        "value": "pointer: coarse"
       }
     ]
   },
@@ -280,23 +353,23 @@
       "refersTo": "button-warp",
       "description": "The one solid gold action per group: warp to a random Cosmos brand.",
       "html": "<div class=\"ds-stage\"><a class=\"ds-btn ds-btn-warp\" href=\"#\"><span>Warp to a random Cosmos</span><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"square\" aria-hidden=\"true\"><path d=\"M2 10h13\"/><path d=\"M10.5 5.5 15 10l-4.5 4.5\"/><path d=\"M18 6v8\"/></svg></a></div>",
-      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --hairline:rgb(237 230 218 / 0.22); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#b5452e; --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.85rem; min-height:3.5rem; padding:0 1.5rem; border:1px solid transparent; border-radius:2px; font-family:var(--font-text); font-size:0.9375rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; text-decoration:none; white-space:nowrap; cursor:pointer; transition:background-color 240ms var(--ease-out), border-color 240ms var(--ease-out), color 240ms var(--ease-out), transform 160ms var(--ease-out); } .ds-btn svg { width:1.1rem; height:1.1rem; flex:none; transition:transform 320ms var(--ease-out); } .ds-btn:active { transform:scale(0.98); } .ds-btn:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; } .ds-btn-warp { background:var(--gold); color:var(--void); } .ds-btn-warp:hover { background:var(--gold-bright); } .ds-btn-warp:hover svg { transform:translateX(4px); }"
+      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --ink-edge:rgb(237 230 218 / 0.5); --hairline:rgb(237 230 218 / 0.22); --void-wash:rgb(4 6 11 / 0.25); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#c74d38; --starlight:#ffffff; --scrim-display:0 2px 24px rgb(4 6 11 / 0.85); --scrim-text:0 2px 18px rgb(4 6 11 / 0.9); --scrim-label:0 1px 10px rgb(4 6 11 / 0.9); --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.85rem; min-height:3.5rem; max-width:100%; padding:0 1.5rem; border:1px solid transparent; border-radius:2px; font-family:var(--font-text); font-size:0.9375rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; text-decoration:none; text-wrap:balance; cursor:pointer; transition:background-color 240ms var(--ease-out), border-color 240ms var(--ease-out), color 240ms var(--ease-out), transform 160ms var(--ease-out); } .ds-btn svg { width:1.1rem; height:1.1rem; flex:none; transition:transform 320ms var(--ease-out); } .ds-btn:active { transform:scale(0.98); } .ds-btn:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; } .ds-btn-warp { background:var(--gold); color:var(--void); } .ds-btn-warp:hover { background:var(--gold-bright); } .ds-btn-warp:hover svg { transform:translateX(4px); }"
     },
     {
       "name": "Explore Hairline Label",
       "kind": "button",
       "refersTo": "button-explore",
-      "description": "Secondary action: hairline outline over a faint void wash.",
+      "description": "Secondary action: ink-edge hairline outline over the void wash.",
       "html": "<div class=\"ds-stage\"><a class=\"ds-btn ds-btn-explore\" href=\"#\"><span>I want to explore</span><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"square\" aria-hidden=\"true\"><path d=\"M10 2v13\"/><path d=\"M5.5 10.5 10 15l4.5-4.5\"/><path d=\"M6 18h8\"/></svg></a></div>",
-      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --hairline:rgb(237 230 218 / 0.22); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#b5452e; --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.85rem; min-height:3.5rem; padding:0 1.5rem; border:1px solid transparent; border-radius:2px; font-family:var(--font-text); font-size:0.9375rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; text-decoration:none; white-space:nowrap; cursor:pointer; transition:background-color 240ms var(--ease-out), border-color 240ms var(--ease-out), color 240ms var(--ease-out), transform 160ms var(--ease-out); } .ds-btn svg { width:1.1rem; height:1.1rem; flex:none; transition:transform 320ms var(--ease-out); } .ds-btn:active { transform:scale(0.98); } .ds-btn:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; } .ds-btn-explore { border-color:rgb(237 230 218 / 0.5); color:var(--ink); background:rgb(4 6 11 / 0.25); } .ds-btn-explore:hover { border-color:var(--teal-bright); color:#fff; } .ds-btn-explore:hover svg { transform:translateY(3px); }"
+      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --ink-edge:rgb(237 230 218 / 0.5); --hairline:rgb(237 230 218 / 0.22); --void-wash:rgb(4 6 11 / 0.25); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#c74d38; --starlight:#ffffff; --scrim-display:0 2px 24px rgb(4 6 11 / 0.85); --scrim-text:0 2px 18px rgb(4 6 11 / 0.9); --scrim-label:0 1px 10px rgb(4 6 11 / 0.9); --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.85rem; min-height:3.5rem; max-width:100%; padding:0 1.5rem; border:1px solid transparent; border-radius:2px; font-family:var(--font-text); font-size:0.9375rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; text-decoration:none; text-wrap:balance; cursor:pointer; transition:background-color 240ms var(--ease-out), border-color 240ms var(--ease-out), color 240ms var(--ease-out), transform 160ms var(--ease-out); } .ds-btn svg { width:1.1rem; height:1.1rem; flex:none; transition:transform 320ms var(--ease-out); } .ds-btn:active { transform:scale(0.98); } .ds-btn:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; } .ds-btn-explore { border-color:var(--ink-edge); color:var(--ink); background:var(--void-wash); } .ds-btn-explore:hover { border-color:var(--teal-bright); color:var(--starlight); } .ds-btn-explore:hover svg { transform:translateY(3px); }"
     },
     {
       "name": "Brand Plate",
       "kind": "card",
       "refersTo": "stop-link",
-      "description": "Per-brand annotation: hairline caliper, brand mark, stepped haiku, outbound link on a hairline rule. Not a card: no fill, no border box.",
+      "description": "Per-brand annotation: hairline caliper, brand mark, stepped haiku with hanging indent, caption-step outbound link on a hairline rule. Not a card: no fill, no border box.",
       "html": "<div class=\"ds-stage\"><div class=\"ds-plate\"><p class=\"ds-plate__name\">Brand mark</p><p class=\"ds-plate__haiku\"><span>Write down tonight's sky</span><span>years from now the same small light</span><span>reaches you again</span></p><a class=\"ds-plate__link\" href=\"#\"><span>Visit dayoneapp.com</span><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"square\" aria-hidden=\"true\"><path d=\"M6 14 15 5\"/><path d=\"M7.5 5H15v7.5\"/></svg></a></div></div>",
-      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --hairline:rgb(237 230 218 / 0.22); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#b5452e; --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-plate { position:relative; max-width:30rem; padding:2.25rem 0 2rem; container-type:inline-size; text-shadow:0 2px 18px rgb(4 6 11 / 0.85); } .ds-plate::before { content:\"\"; position:absolute; top:0; left:0; width:min(9rem,40%); height:9px; border:1px solid var(--ink-faint); border-bottom:0; } .ds-plate__name { margin:0 0 1.5rem; font-family:var(--font-display); font-weight:300; font-size:2rem; letter-spacing:0.2em; text-transform:uppercase; } .ds-plate__haiku { margin:0 0 2rem; font-weight:300; font-size:clamp(1rem,5.3cqi,2.5rem); line-height:1.32; letter-spacing:-0.01em; } .ds-plate__haiku span { display:block; white-space:nowrap; } .ds-plate__haiku span:nth-child(2) { padding-left:1.2em; } .ds-plate__haiku span:nth-child(3) { padding-left:0.6em; } .ds-plate__link { display:inline-flex; align-items:center; gap:0.6rem; min-width:min(100%,16rem); min-height:2.75rem; padding:0.75rem 0; border-top:1px solid var(--hairline); font-size:0.875rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; text-decoration:none; color:var(--gold-bright); transition:color 240ms var(--ease-out), border-color 240ms var(--ease-out); } .ds-plate__link svg { width:1rem; height:1rem; margin-left:auto; transition:transform 320ms var(--ease-out); } .ds-plate__link:hover { color:#fff; border-color:var(--gold); } .ds-plate__link:hover svg { transform:translate(3px,-3px); } .ds-plate__link:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; }"
+      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --ink-edge:rgb(237 230 218 / 0.5); --hairline:rgb(237 230 218 / 0.22); --void-wash:rgb(4 6 11 / 0.25); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#c74d38; --starlight:#ffffff; --scrim-display:0 2px 24px rgb(4 6 11 / 0.85); --scrim-text:0 2px 18px rgb(4 6 11 / 0.9); --scrim-label:0 1px 10px rgb(4 6 11 / 0.9); --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-plate { position:relative; max-width:30rem; padding:2.25rem 0 2rem; container-type:inline-size; text-shadow:var(--scrim-text); } .ds-plate::before { content:\"\"; position:absolute; top:0; left:0; width:min(9rem,40%); height:9px; border:1px solid var(--ink-faint); border-bottom:0; } .ds-plate__name { margin:0 0 1.5rem; font-family:var(--font-display); font-weight:300; font-size:2rem; letter-spacing:0.2em; text-transform:uppercase; } .ds-plate__haiku { margin:0 0 2rem; font-weight:300; font-size:clamp(1rem,0.9rem + 1.3vw,2.5rem); font-size:clamp(1rem,5.3cqi,2.5rem); line-height:1.32; letter-spacing:-0.01em; color:var(--ink); } .ds-plate__haiku span { --step:0em; display:block; padding-left:calc(var(--step) + 1em); text-indent:-1em; } .ds-plate__haiku span:nth-child(2) { --step:1.2em; } .ds-plate__haiku span:nth-child(3) { --step:0.6em; } .ds-plate__link { display:inline-flex; align-items:center; gap:0.6rem; max-width:100%; min-width:min(100%,16rem); min-height:2.75rem; padding:0.75rem 0; border-top:1px solid var(--hairline); font-size:0.8125rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; text-decoration:none; color:var(--gold-bright); transition:color 240ms var(--ease-out), border-color 240ms var(--ease-out); } .ds-plate__link span { min-width:0; overflow-wrap:anywhere; } .ds-plate__link svg { width:1rem; height:1rem; margin-left:auto; transition:transform 320ms var(--ease-out); } .ds-plate__link:hover { color:var(--starlight); border-color:var(--gold); } .ds-plate__link:hover svg { transform:translate(3px,-3px); } .ds-plate__link:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; }"
     },
     {
       "name": "Stop Index",
@@ -304,40 +377,47 @@
       "refersTo": "index-tick",
       "description": "Catalog strip of hairline ticks on the right edge; the current stop widens to gold and shows its name.",
       "html": "<div class=\"ds-stage\"><nav class=\"ds-index\" aria-label=\"Cosmos brands\"><ol><li><a href=\"#\"><span class=\"ds-index__label\">Tumblr</span><span class=\"ds-index__tick\"></span></a></li><li><a href=\"#\" aria-current=\"true\"><span class=\"ds-index__label\">Day One</span><span class=\"ds-index__tick\"></span></a></li><li><a href=\"#\"><span class=\"ds-index__label\">Pocket Casts</span><span class=\"ds-index__tick\"></span></a></li><li><a href=\"#\"><span class=\"ds-index__label\">Me.sh</span><span class=\"ds-index__tick\"></span></a></li></ol></nav></div>",
-      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --hairline:rgb(237 230 218 / 0.22); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#b5452e; --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-index { display:flex; justify-content:flex-end; } .ds-index ol { display:grid; gap:0.25rem; margin:0; padding:0; list-style:none; } .ds-index a { display:flex; align-items:center; justify-content:flex-end; gap:0.75rem; min-height:2.25rem; padding-left:1rem; text-decoration:none; color:var(--ink-soft); } .ds-index__label { font-size:0.75rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; opacity:0; transform:translateX(6px); transition:opacity 240ms var(--ease-out), transform 240ms var(--ease-out); } .ds-index__tick { width:14px; height:1px; background:var(--ink-faint); transition:width 320ms var(--ease-out), background-color 240ms var(--ease-out); } .ds-index a:hover .ds-index__label, .ds-index a:focus-visible .ds-index__label, .ds-index a[aria-current=\"true\"] .ds-index__label { opacity:1; transform:none; } .ds-index a:hover .ds-index__tick, .ds-index a:focus-visible .ds-index__tick { background:var(--ink); } .ds-index a[aria-current=\"true\"] { color:var(--ink); } .ds-index a[aria-current=\"true\"] .ds-index__tick { width:28px; background:var(--gold); } .ds-index a:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; }"
+      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --ink-edge:rgb(237 230 218 / 0.5); --hairline:rgb(237 230 218 / 0.22); --void-wash:rgb(4 6 11 / 0.25); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#c74d38; --starlight:#ffffff; --scrim-display:0 2px 24px rgb(4 6 11 / 0.85); --scrim-text:0 2px 18px rgb(4 6 11 / 0.9); --scrim-label:0 1px 10px rgb(4 6 11 / 0.9); --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-index { display:flex; justify-content:flex-end; } .ds-index ol { display:grid; gap:0.25rem; margin:0; padding:0; list-style:none; } .ds-index a { display:flex; align-items:center; justify-content:flex-end; gap:0.75rem; min-height:2.25rem; padding-left:1rem; text-decoration:none; color:var(--ink-soft); } .ds-index__label { font-size:0.8125rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; text-shadow:var(--scrim-label); opacity:0; transform:translateX(6px); transition:opacity 240ms var(--ease-out), transform 240ms var(--ease-out); } .ds-index__tick { width:14px; height:1px; background:var(--ink-faint); transition:width 320ms var(--ease-out), background-color 240ms var(--ease-out); } .ds-index a:hover .ds-index__label, .ds-index a:focus-visible .ds-index__label, .ds-index a[aria-current=\"true\"] .ds-index__label { opacity:1; transform:none; } .ds-index a:hover .ds-index__tick, .ds-index a:focus-visible .ds-index__tick { background:var(--ink); } .ds-index a[aria-current=\"true\"] { color:var(--ink); } .ds-index a[aria-current=\"true\"] .ds-index__tick { width:28px; background:var(--gold); } .ds-index a:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; } @media (pointer: coarse) { .ds-index a { min-width:2.75rem; min-height:2.75rem; } }"
     },
     {
       "name": "Registration Frame and Plate Designation",
       "kind": "custom",
       "description": "Four hairline L-corners holding the viewport, with the plate designation beside the lower-left mark.",
       "html": "<div class=\"ds-stage\"><div class=\"ds-frame\"><span></span><span></span><span></span><span></span><p class=\"ds-plate-id\">Plate 2 / 6 · Day One</p></div></div>",
-      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --hairline:rgb(237 230 218 / 0.22); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#b5452e; --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-frame { position:relative; height:12rem; } .ds-frame span { position:absolute; width:18px; height:18px; border:0 solid var(--ink-faint); } .ds-frame span:nth-child(1) { top:0; left:0; border-top-width:1px; border-left-width:1px; } .ds-frame span:nth-child(2) { top:0; right:0; border-top-width:1px; border-right-width:1px; } .ds-frame span:nth-child(3) { bottom:0; left:0; border-bottom-width:1px; border-left-width:1px; } .ds-frame span:nth-child(4) { bottom:0; right:0; border-bottom-width:1px; border-right-width:1px; } .ds-plate-id { position:absolute; left:28px; bottom:0; margin:0; transform:translateY(40%); font-size:0.6875rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft); }"
+      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --ink-edge:rgb(237 230 218 / 0.5); --hairline:rgb(237 230 218 / 0.22); --void-wash:rgb(4 6 11 / 0.25); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#c74d38; --starlight:#ffffff; --scrim-display:0 2px 24px rgb(4 6 11 / 0.85); --scrim-text:0 2px 18px rgb(4 6 11 / 0.9); --scrim-label:0 1px 10px rgb(4 6 11 / 0.9); --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-frame { position:relative; height:12rem; } .ds-frame span { position:absolute; width:18px; height:18px; border:0 solid var(--ink-faint); } .ds-frame span:nth-child(1) { top:0; left:0; border-top-width:1px; border-left-width:1px; } .ds-frame span:nth-child(2) { top:0; right:0; border-top-width:1px; border-right-width:1px; } .ds-frame span:nth-child(3) { bottom:0; left:0; border-bottom-width:1px; border-left-width:1px; } .ds-frame span:nth-child(4) { bottom:0; right:0; border-bottom-width:1px; border-right-width:1px; } .ds-plate-id { position:absolute; left:28px; bottom:0; margin:0; transform:translateY(40%); font-size:0.8125rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft); }"
     },
     {
       "name": "Title Stack",
       "kind": "custom",
       "description": "Display title in Unbounded 300 with the soft-ink lede beneath, set directly on the sky.",
-      "html": "<div class=\"ds-stage\"><h1 class=\"ds-display\">Welcome to our Cosmos</h1><p class=\"ds-lede\">Explore our full galaxy of products</p></div>",
-      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --hairline:rgb(237 230 218 / 0.22); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#b5452e; --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-display { margin:0 0 1.25rem; font-family:var(--font-display); font-weight:300; font-size:clamp(2.4rem, 0.9rem + 6.2vw, 6rem); line-height:1.02; letter-spacing:-0.035em; max-width:11ch; text-wrap:balance; text-shadow:0 2px 24px rgb(4 6 11 / 0.8); } .ds-lede { margin:0; max-width:30ch; font-size:clamp(1.15rem, 0.95rem + 0.8vw, 1.5rem); font-weight:300; line-height:1.4; color:var(--ink-soft); }"
+      "html": "<div class=\"ds-stage\"><div class=\"ds-copy\"><h1 class=\"ds-display\">Welcome to our Cosmos</h1><p class=\"ds-lede\">Explore our full galaxy of products</p></div></div>",
+      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --ink-edge:rgb(237 230 218 / 0.5); --hairline:rgb(237 230 218 / 0.22); --void-wash:rgb(4 6 11 / 0.25); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#c74d38; --starlight:#ffffff; --scrim-display:0 2px 24px rgb(4 6 11 / 0.85); --scrim-text:0 2px 18px rgb(4 6 11 / 0.9); --scrim-label:0 1px 10px rgb(4 6 11 / 0.9); --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-copy { max-width:44rem; text-shadow:var(--scrim-display); } .ds-display { margin:0 0 1.25rem; font-family:var(--font-display); font-weight:300; font-size:clamp(min(2.4rem, 11vw), min(0.9rem + 6.2vw, 12.5vh), 6rem); line-height:1.02; letter-spacing:-0.035em; max-width:11ch; text-wrap:balance; } .ds-lede { margin:0; max-width:30ch; font-size:clamp(1.15rem, 0.95rem + 0.8vw, 1.5rem); font-weight:300; line-height:1.4; color:var(--ink-soft); }"
+    },
+    {
+      "name": "Headline",
+      "kind": "custom",
+      "description": "The shared secondary headline: closing line, 404 and /warp/ titles, Unbounded 300 on the display scrim.",
+      "html": "<div class=\"ds-stage\"><h2 class=\"ds-headline\">Pick&nbsp;a&nbsp;star, any&nbsp;star</h2></div>",
+      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --ink-edge:rgb(237 230 218 / 0.5); --hairline:rgb(237 230 218 / 0.22); --void-wash:rgb(4 6 11 / 0.25); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#c74d38; --starlight:#ffffff; --scrim-display:0 2px 24px rgb(4 6 11 / 0.85); --scrim-text:0 2px 18px rgb(4 6 11 / 0.9); --scrim-label:0 1px 10px rgb(4 6 11 / 0.9); --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-headline { margin:0; font-family:var(--font-display); font-weight:300; font-size:clamp(min(2rem, 9vw), 1rem + 4vw, 4.25rem); line-height:1.05; letter-spacing:-0.03em; text-wrap:balance; text-shadow:var(--scrim-display); }"
     },
     {
       "name": "Destination List",
       "kind": "custom",
       "description": "Warp-page fallback list: uppercase gold-bright labels between hairline rules.",
       "html": "<div class=\"ds-stage\"><ul class=\"ds-dest\"><li><a href=\"#\">Tumblr</a></li><li><a href=\"#\">Day One</a></li><li><a href=\"#\">Pocket Casts</a></li></ul></div>",
-      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --hairline:rgb(237 230 218 / 0.22); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#b5452e; --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-dest { margin:0; padding:0; list-style:none; border-top:1px solid var(--hairline); max-width:24rem; } .ds-dest a { display:block; padding:0.85rem 0; border-bottom:1px solid var(--hairline); text-decoration:none; color:var(--gold-bright); font-weight:500; letter-spacing:0.06em; text-transform:uppercase; font-size:0.9375rem; } .ds-dest a:hover { color:#fff; } .ds-dest a:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; }"
+      "css": ":host, :root { --void:#04060b; --ink:#ede6da; --ink-soft:#b9c4c2; --ink-faint:rgb(237 230 218 / 0.38); --ink-edge:rgb(237 230 218 / 0.5); --hairline:rgb(237 230 218 / 0.22); --void-wash:rgb(4 6 11 / 0.25); --teal:#1fa7a0; --teal-bright:#6fd6cb; --gold:#e3a24a; --gold-bright:#f2c47a; --rust:#c74d38; --starlight:#ffffff; --scrim-display:0 2px 24px rgb(4 6 11 / 0.85); --scrim-text:0 2px 18px rgb(4 6 11 / 0.9); --scrim-label:0 1px 10px rgb(4 6 11 / 0.9); --font-display:\"Unbounded Variable\",\"Unbounded\",ui-sans-serif,sans-serif; --font-text:\"Geologica Variable\",\"Geologica\",ui-sans-serif,sans-serif; --ease-out:cubic-bezier(0.16,1,0.3,1); } .ds-stage { background:var(--void); color:var(--ink); font-family:var(--font-text); padding:2rem; } .ds-dest { margin:0; padding:0; list-style:none; border-top:1px solid var(--hairline); max-width:24rem; text-shadow:var(--scrim-text); } .ds-dest a { display:block; padding:0.85rem 0; border-bottom:1px solid var(--hairline); text-decoration:none; color:var(--gold-bright); font-weight:500; letter-spacing:0.06em; text-transform:uppercase; font-size:0.9375rem; } .ds-dest a:hover { color:var(--starlight); } .ds-dest a:focus-visible { outline:2px solid var(--teal-bright); outline-offset:4px; }"
     }
   ],
   "narrative": {
     "northStar": "The Deep Field Plate",
-    "overview": "Every surface is an astronomical observation plate: narrowband false-color light on a void close to black, annotated in small, precise type. The sky is the image and the interface is the annotation on it. Oxygen teal and hydrogen gold carry the light; rust appears only as dust lanes and the rare hot star. A layer of photographic grain sits over everything drawn and beneath the text, and hairline registration marks hold the four corners of the viewport like the edges of a glass plate.\n\nThe type does the work that chrome would do elsewhere. A wide, light futuristic display face states the title; a quiet humanist sans sets verse, body and the uppercase caption annotations. Controls are plate labels: flat rectangles with a 2px corner, either a solid gold label or a hairline outline, never pills. Nothing floats on a card, a glass panel or a glow. Text sits directly on the sky and earns legibility from a soft void-colored shadow and from being placed where the galaxy leaves the frame empty.\n\nMotion is astronomical, not decorative: slow differential rotation, scroll-driven crossfades between galaxies, stars that lean toward the pointer and settle, and one exposure-style warp in which the frame stops clearing and stars stretch into long-exposure trails. Everything reduces to a still, composed plate under `prefers-reduced-motion`.",
+    "overview": "Every surface is an astronomical observation plate: narrowband false-color light on a void close to black, annotated in small, precise type. The sky is the image and the interface is the annotation on it. Oxygen teal and hydrogen gold carry the light; rust appears only as dust lanes and the rare hot star. Photographic grain sits in the exposure itself, beneath the text, and hairline registration marks hold the four corners of the viewport like the edges of a glass plate.\n\nThe type does the work that chrome would do elsewhere. A wide, light futuristic display face states the title; a quiet humanist sans sets verse, body and the uppercase caption annotations. Controls are plate labels: flat rectangles with a 2px corner, either a solid gold label or a hairline outline, never pills. Nothing floats on a card, a glass panel or a glow. Text sits directly on the sky and earns legibility from a soft void-colored shadow and from being placed where the galaxy leaves the frame empty.\n\nMotion is astronomical, not decorative: slow rotation with trailing arms, scroll-driven crossfades between galaxies, stars that lean toward the pointer and settle, and one exposure-style warp in which the frame stops clearing, stars stretch into long-exposure trails and the plate burns out to light. Everything reduces to a still, composed plate under `prefers-reduced-motion`, and the still plate is always there to fall back to.",
     "keyCharacteristics": [
       "Void ground, two narrowband light colors, rust held back for dust.",
       "Text set as plate annotation: display title, uppercase tracked captions, hairline rules.",
       "Four hairline registration marks and a plate designation as the persistent frame.",
       "Flat 2px plate labels for actions; no pills, cards, glass or UI glow.",
       "Content placed on the side of the frame the galaxy leaves empty.",
-      "Photographic grain overlay; four-point diffraction spikes on the brightest stars."
+      "Photographic grain in the exposure; four-point diffraction spikes on the brightest stars."
     ],
     "rules": [
       {
@@ -352,7 +432,12 @@
       },
       {
         "name": "The Ink At Rest Rule",
-        "body": "Resting text is warm ink, not white. Pure white is a hover response.",
+        "body": "Resting text is warm ink, not white. Pure white is a hover response; the only resting white is the warp status, whose difference blend needs it to invert against the burning plate.",
+        "section": "colors"
+      },
+      {
+        "name": "The Faint Is Decoration Rule",
+        "body": "Faint ink draws annotation devices (registration corners, calipers, ticks) and never sets text. Any word on the plate is soft ink or brighter.",
         "section": "colors"
       },
       {
@@ -366,6 +451,21 @@
         "section": "typography"
       },
       {
+        "name": "The One Small Step Rule",
+        "body": "There is one size below the label: the caption step. Links, labels and annotations that need to be small snap to it rather than inventing a size between.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Coordinate System Rule",
+        "body": "The sky, the copy and the index are placed against the same viewport. Never wrap the copy in a max-width frame the galaxies do not share, or the empty side of the frame stops being empty.",
+        "section": "layout"
+      },
+      {
+        "name": "The Enlarged Text Rule",
+        "body": "Gaps are viewport-bounded and columns are minmax(0, 1fr), so enlarged text wraps inside its column instead of pushing the plate off screen.",
+        "section": "layout"
+      },
+      {
         "name": "The Sky Is The Depth Rule",
         "body": "No box-shadows, no raised surfaces, no backdrop blur. If something needs to separate from the sky, move it to empty sky or give it a void text-shadow.",
         "section": "elevation"
@@ -374,15 +474,28 @@
         "name": "The Star Light Belongs To Stars Rule",
         "body": "Halos, bulge glow and four-point diffraction spikes are rendered star light and live only in the sky. UI elements never glow.",
         "section": "elevation"
+      },
+      {
+        "name": "The Scrim By Size Rule",
+        "body": "Legibility shadows come from the three scrims, matched to type size. They darken, never glow, and never take a color other than void.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Plate Is The Floor Rule",
+        "body": "The live sky is an enhancement. Every page must read and work on the still plate alone.",
+        "section": "elevation"
       }
     ],
     "dos": [
       "Do keep light narrowband: teal and gold for stars and gas, rust only for dust and rare hot stars.",
       "Do use a single solid gold plate label for the primary action and a hairline label for the secondary.",
       "Do set controls at a 2px corner with a 1px border and uppercase Geologica label type.",
-      "Do place text on the side of the frame the galaxy leaves empty and back it with a void text-shadow.",
-      "Do use hairlines in faint ink for annotation: registration corners, calipers, rules, ticks.",
+      "Do place text on the side of the frame the galaxy leaves empty and back it with the scrim for its size.",
+      "Do use hairlines in faint ink for annotation devices: registration corners, calipers, ticks.",
+      "Do set every small word at the caption step in soft ink or brighter.",
+      "Do clear the device safe area on every pinned element, and keep touch targets at least 44px on coarse pointers.",
       "Do use the plate ease (cubic-bezier(0.16, 1, 0.3, 1)) for interface transitions, and reduce the sky to a still composed frame under reduced motion.",
+      "Do give every galaxy trailing arms; vary brands by arms, winding, tilt, angle and warmth.",
       "Do show every brand mark exactly as published, reversed for the void when the brand provides a reversed form."
     ],
     "donts": [
@@ -392,6 +505,9 @@
       "Don't use rust in type, borders or fills.",
       "Don't set body, verse or labels in Unbounded, or titles heavier than 300.",
       "Don't use pure white for resting text.",
+      "Don't set text in faint ink.",
+      "Don't wrap copy in a max-width frame the sky does not share.",
+      "Don't add a CSS color wash to the warp; the exposure does it.",
       "Don't add invented sky coordinates, catalog numbers or other fabricated plate data."
     ]
   }
