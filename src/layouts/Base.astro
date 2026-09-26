@@ -11,9 +11,11 @@ interface Props {
    * plate: the page shows the still plate (and CSS grain) from the start.
    */
   sky?: 'live' | 'plate';
+  /** Keep utility pages (such as the /warp/ redirect) out of search results. */
+  noindex?: boolean;
 }
 
-const { title, description, sky = 'plate' } = Astro.props;
+const { title, description, sky = 'plate', noindex = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
@@ -24,6 +26,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#04060b" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

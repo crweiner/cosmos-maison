@@ -159,9 +159,15 @@ const first = brands[0];
       if (warping) return;
       warping = true;
       const target = pickTarget();
-      status.textContent = `Warping to ${target.name}`;
+      const animated = !!sky && !reduceMotion.matches;
+      // Without the shutter (reduced motion, or no live sky) the visitor still
+      // sees, and hears, where they are going before the page changes.
+      status.textContent = animated ? `Warping to ${target.name}` : `Taking you to ${target.name}…`;
       root.classList.add('is-warping');
-      if (sky && !reduceMotion.matches) {
+      root.classList.toggle('warp-still', !animated);
+      if (!animated) {
+        await new Promise((done) => setTimeout(done, 700));
+      } else if (sky) {
         // Leave on time even if the browser stops sending animation frames mid-warp.
         await Promise.race([sky.warp(1500), new Promise((done) => setTimeout(done, 2200))]);
       }
@@ -173,7 +179,7 @@ const first = brands[0];
   window.addEventListener('pageshow', (event) => {
     if (!event.persisted) return;
     warping = false;
-    root.classList.remove('is-warping');
+    root.classList.remove('is-warping', 'warp-still');
     status.textContent = '';
     sky?.reset();
   });
@@ -377,10 +383,32 @@ const first = brands[0];
     opacity: 1;
   }
 
+  /* Still hand-off (no shutter): the destination has to read within ~700ms. */
+  :global(html.warp-still) .warp-status {
+    transition: opacity 180ms var(--ease-out);
+  }
+
+  :global(html.warp-still .page),
+  :global(html.warp-still .index),
+  :global(html.warp-still .registration),
+  :global(html.warp-still .plate-id) {
+    filter: none;
+    transition: opacity 180ms var(--ease-out);
+  }
+
 
   @media (prefers-reduced-motion: reduce) {
     :global(html.is-warping .page) {
       filter: none;
+    }
+
+    /* A still hand-off: the page steps back and the destination appears at once. */
+    :global(html.is-warping .page),
+    :global(html.is-warping .index),
+    :global(html.is-warping .registration),
+    :global(html.is-warping .plate-id),
+    .warp-status {
+      transition: none;
     }
   }
 
