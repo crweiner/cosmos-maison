@@ -275,6 +275,8 @@ html:not(.js) .grain {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-decoration: none;
+  /* Labels hold their own ground; the sky scrim from the surrounding copy stops here. */
+  text-shadow: none;
   /* One line at default sizes; wraps rather than overflowing when text is enlarged. */
   max-width: 100%;
   text-wrap: balance;

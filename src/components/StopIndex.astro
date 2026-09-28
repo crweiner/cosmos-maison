@@ -63,12 +63,15 @@ const { brands } = Astro.props;
     text-shadow: var(--scrim-label);
   }
 
+  /* Drawn at its current length and scaled down at rest, so it grows without relayout. */
   .index__tick {
-    width: 14px;
+    width: 28px;
     height: 1px;
     background: var(--ink-faint);
+    transform: scaleX(0.5);
+    transform-origin: right;
     transition:
-      width 320ms var(--ease-out),
+      transform 320ms var(--ease-out),
       background-color 240ms var(--ease-out);
   }
 
@@ -89,7 +92,7 @@ const { brands } = Astro.props;
   }
 
   a[aria-current] .index__tick {
-    width: 28px;
+    transform: none;
     background: var(--gold);
   }
 
@@ -113,11 +116,12 @@ const { brands } = Astro.props;
     }
 
     .index__tick {
-      width: 10px;
+      width: 18px;
+      transform: scaleX(calc(10 / 18));
     }
 
     a[aria-current] .index__tick {
-      width: 18px;
+      transform: none;
     }
   }
 
