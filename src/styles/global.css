@@ -67,7 +67,7 @@ body {
 
 /*
  * On the live sky, the browser keeps vertical scrolling and pinch-zoom while
- * sideways finger drags reach the galaxy, which the visitor can tip and turn.
+ * sideways finger swipes reach the galaxy and knock its stars about.
  */
 html[data-sky='live'] body {
   touch-action: pan-y pinch-zoom;

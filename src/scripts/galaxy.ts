@@ -20,6 +20,13 @@ const PASS_STARS = 2;
 const PASS_FIELD = 3;
 const PASS_SPIKES = 4;
 
+/**
+ * Knocks the shader remembers: swipe samples and taps. Each one starts at
+ * zero displacement and swells smoothly, so adding one never makes a star
+ * jump; 24 slots at one sample per 45ms outlast a knock's ~1s life.
+ */
+const KNOCKS = 24;
+
 const VERT = /* glsl */ `
 precision highp float;
 precision highp int;
@@ -39,10 +46,11 @@ uniform float u_warmth;
 uniform vec2 u_center;
 uniform float u_scale;
 uniform float u_alpha;
-// Interactive orientation (radians): the disk is turned around the screen's
-// vertical axis (yaw) and horizontal axis (pitch) by pointer and touch.
-uniform float u_yaw;
-uniform float u_pitch;
+// Knocks in device px: xy = where, zw = push direction x strength (swipe)
+// or (strength, 0) for a tap.
+uniform vec4 u_knock[${KNOCKS}];
+// x = age in seconds (negative = empty), y = kind (0 swipe, 1 tap).
+uniform vec2 u_knockMeta[${KNOCKS}];
 uniform float u_warp;
 uniform float u_headroom;
 uniform float u_pointScale;
@@ -58,6 +66,52 @@ const vec3 RUST = vec3(0.78, 0.30, 0.22);
 const vec3 WHITE = vec3(0.96, 0.94, 0.90);
 const vec3 BLUEWHITE = vec3(0.78, 0.90, 0.98);
 
+/*
+ * Knocked about: stars near a swipe or tap get a push and spring back. Each
+ * star takes its own share, heading and timing of the push, so a group
+ * scatters like particles rather than moving as one sheet. The response
+ * rises from zero (t/tp * e^(1 - t/tp)), so nothing ever snaps.
+ */
+vec2 knock(vec2 px, float seed) {
+  vec2 disp = vec2(0.0);
+  float tp = 0.10 + 0.08 * fract(seed * 23.71 + 0.17);
+  for (int i = 0; i < ${KNOCKS}; i++) {
+    vec2 meta = u_knockMeta[i];
+    float age = meta.x;
+    if (age < 0.0 || age > 1.1) continue;
+    vec4 k = u_knock[i];
+    vec2 d = px - k.xy;
+    float r2 = dot(d, d);
+    float reach = (meta.y < 0.5 ? 70.0 : 60.0) * u_dpr;
+    float fall = exp(-r2 / (reach * reach));
+    if (fall < 0.01) continue;
+    float dist = max(sqrt(r2), 1.0);
+    vec2 outward = d / dist;
+    float t = age / tp;
+    float pulse = t * exp(1.0 - t);
+    if (meta.y < 0.5) {
+      // Swipe: along the stroke, and a little away from its path.
+      float strength = length(k.zw);
+      disp += (k.zw * 0.8 + outward * strength * 0.5) * fall * pulse * 7.0 * u_dpr;
+    } else {
+      // Tap: straight out from the fingertip.
+      disp += outward * fall * pulse * k.z * 8.0 * u_dpr;
+    }
+  }
+  float share = 0.4 + 1.1 * fract(seed * 17.13 + 0.37);
+  float turn = (fract(seed * 41.7 + 0.11) - 0.5) * 1.2;
+  float c = cos(turn), sn = sin(turn);
+  disp = vec2(disp.x * c - disp.y * sn, disp.x * sn + disp.y * c) * share;
+  // Soft ceiling near 14 CSS px.
+  float cap = 14.0 * u_dpr;
+  float m = length(disp);
+  if (m > 0.0001) {
+    float e = exp(-2.0 * m / cap);
+    disp *= cap * ((1.0 - e) / (1.0 + e)) / m;
+  }
+  return disp;
+}
+
 void main() {
   v_kind = a_kind;
 
@@ -66,6 +120,7 @@ void main() {
     vec2 p = a_seed.xy * u_res;
     // A very slow drift so the backdrop is never frozen, stronger during warp.
     p += (a_seed.xy - 0.5) * u_res * u_warp * u_warp * 0.35;
+    if (u_pass == ${PASS_FIELD}) p += knock(p, a_seed.z + a_seed.w) * 0.4;
     gl_Position = vec4(p / u_res * 2.0 - 1.0, 0.0, 1.0);
     gl_Position.y = -gl_Position.y;
     float twinkle = 0.82 + 0.18 * sin(u_time * (0.6 + a_seed.w * 1.4) + a_seed.z * 40.0);
@@ -113,23 +168,15 @@ void main() {
   if (a_kind > 1.5 && a_kind < 2.5) h *= 3.5;
   vec3 p3 = vec3(cos(theta) * r, sin(theta) * r, h);
 
-  // The visitor's hand turns the disk on its own axes first, like tipping a
-  // plate: a sideways drag swings it edge-on, a vertical one tips it flat.
-  vec3 q = p3;
-  float cp = cos(u_pitch), sp = sin(u_pitch);
-  q = vec3(q.x, q.y * cp - q.z * sp, q.y * sp + q.z * cp);
-  float cyw = cos(u_yaw), syw = sin(u_yaw);
-  q = vec3(q.x * cyw + q.z * syw, q.y, -q.x * syw + q.z * cyw);
-  // Then incline the disk toward the viewer and orient it on screen.
+  // Incline the disk toward the viewer, then orient it on screen.
   float ct = cos(u_tilt), st = sin(u_tilt);
-  q = vec3(q.x, q.y * ct - q.z * st, q.y * st + q.z * ct);
+  vec2 p2 = vec2(p3.x, p3.y * ct - p3.z * st);
   float ca = cos(u_angle), sa = sin(u_angle);
-  q = vec3(q.x * ca - q.y * sa, q.x * sa + q.y * ca, q.z);
-  // Slight perspective so the turned disk reads as an object, not a squash.
-  vec2 p2 = q.xy / (1.0 + q.z * 0.28);
+  p2 = vec2(p2.x * ca - p2.y * sa, p2.x * sa + p2.y * ca);
 
   float scale = u_scale * (1.0 + u_warp * u_warp * 0.9);
   vec2 px = u_center + p2 * scale;
+  px += knock(px, a_seed.y + a_seed.w);
 
   gl_Position = vec4(px / u_res * 2.0 - 1.0, 0.0, 1.0);
   gl_Position.y = -gl_Position.y;
@@ -506,8 +553,8 @@ export function startGalaxy(
     center: u('u_center'),
     scale: u('u_scale'),
     alpha: u('u_alpha'),
-    yaw: u('u_yaw'),
-    pitch: u('u_pitch'),
+    knock: u('u_knock'),
+    knockMeta: u('u_knockMeta'),
     warp: u('u_warp'),
   };
   const quadPos = gl.getAttribLocation(quad, 'a_pos');
@@ -574,19 +621,17 @@ export function startGalaxy(
   let W = 0;
   let H = 0;
   /*
-   * Orientation spring. The disk's yaw and pitch are pulled back to rest by a
-   * slightly under-damped spring (settles in under a second, with a soft
-   * toss); pointer motion adds angular velocity, a finger drag moves the
-   * spring's target. Everything is integrated per frame, so it cannot step.
+   * Knocks: while a pointer or finger moves, a lightly smoothed follower lays
+   * swipe knocks along its path; taps add one outward knock from a shared
+   * energy budget. Ages advance per frame; the shader does the rest.
    */
-  const orient = { yaw: 0, pitch: 0, vy: 0, vp: 0, ty: 0, tp: 0 };
-  const SPRING = 38; // stiffness (1/s^2)
-  const DAMP = 2 * Math.sqrt(SPRING) * 0.72; // just under critical
-  const MAX_YAW = 1.2;
-  const MAX_PITCH = 0.7;
-  const MAX_SPIN = 3; // rad/s
-  const mouse = { x: 0, y: 0, seen: false };
-  const drag = { active: false, id: -1, x0: 0, y0: 0, moved: false };
+  const knockData = new Float32Array(KNOCKS * 4);
+  const knockMeta = new Float32Array(KNOCKS * 2).fill(-1);
+  const knockBorn = new Float64Array(KNOCKS).fill(-1e9);
+  let knockNext = 0;
+  let lastSwipeKnock = 0;
+  let tapEnergy = 1;
+  const follow = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, on: false };
   let warp = 0;
   let warping = false;
   let time = 12; // start mid-rotation so the first frame is already composed
@@ -748,9 +793,8 @@ export function startGalaxy(
     gl!.uniform2f(U.res, W, H);
     gl!.uniform1f(U.dpr, dpr);
     gl!.uniform1f(U.time, time);
-    // Soft limits on what is shown: the disk tips far, but never flips.
-    gl!.uniform1f(U.yaw, MAX_YAW * Math.tanh(orient.yaw / MAX_YAW));
-    gl!.uniform1f(U.pitch, MAX_PITCH * Math.tanh(orient.pitch / MAX_PITCH));
+    gl!.uniform4fv(U.knock, knockData);
+    gl!.uniform2fv(U.knockMeta, knockMeta);
     gl!.uniform1f(U.warp, warp);
     gl!.uniform1f(headroomLoc, headroom);
   }
@@ -768,30 +812,46 @@ export function startGalaxy(
     }
   }
 
-  function settleOrient() {
-    orient.ty = orient.tp = 0;
-    drag.active = false;
+  function addKnock(x: number, y: number, zx: number, zy: number, kind: number, now: number) {
+    const i = knockNext;
+    knockNext = (knockNext + 1) % KNOCKS;
+    knockData.set([x * dpr, y * dpr, zx, zy], i * 4);
+    knockMeta[i * 2 + 1] = kind;
+    knockBorn[i] = now;
   }
 
-  function clampSpin() {
-    orient.vy = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, orient.vy));
-    orient.vp = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, orient.vp));
+  function clearKnocks() {
+    knockBorn.fill(-1e9);
+    knockMeta.fill(-1);
+    follow.on = false;
   }
 
-  /** Integrate the orientation spring toward its target (rest, or the finger). */
-  function updateOrient(dt: number, still: boolean) {
-    if (still) {
-      orient.yaw = orient.pitch = orient.vy = orient.vp = 0;
+  /** Follow the pointer, lay swipe knocks while it moves, age every knock. */
+  function updateKnocks(now: number, dt: number, still: boolean) {
+    if (still || warping) {
+      clearKnocks();
       return;
     }
-    // Sub-step so a long frame (30fps idle, a hitch) stays stable and smooth.
-    const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
-    const h = dt / steps;
-    for (let i = 0; i < steps; i++) {
-      orient.vy += (-SPRING * (orient.yaw - orient.ty) - DAMP * orient.vy) * h;
-      orient.vp += (-SPRING * (orient.pitch - orient.tp) - DAMP * orient.vp) * h;
-      orient.yaw += orient.vy * h;
-      orient.pitch += orient.vp * h;
+    tapEnergy = Math.min(1, tapEnergy + dt / 0.9);
+    if (follow.on && dt > 0) {
+      const a = 1 - Math.exp(-dt / 0.05);
+      const nx = follow.x + (follow.tx - follow.x) * a;
+      const ny = follow.y + (follow.ty - follow.y) * a;
+      const b = 1 - Math.exp(-dt / 0.06);
+      follow.vx += ((nx - follow.x) / dt - follow.vx) * b;
+      follow.vy += ((ny - follow.y) / dt - follow.vy) * b;
+      follow.x = nx;
+      follow.y = ny;
+      const speed = Math.hypot(follow.vx, follow.vy);
+      if (speed > 60 && now - lastSwipeKnock > 45) {
+        const strength = Math.min(1, Math.max(0.15, speed / 1500));
+        addKnock(follow.x, follow.y, (follow.vx / speed) * strength, (follow.vy / speed) * strength, 0, now);
+        lastSwipeKnock = now;
+      }
+    }
+    for (let i = 0; i < KNOCKS; i++) {
+      const age = (now - knockBorn[i]) / 1000;
+      knockMeta[i * 2] = age <= 1.1 ? age : -1;
     }
   }
 
@@ -814,7 +874,7 @@ export function startGalaxy(
     drawn++;
     if (!still) time += dt * (1 + warp * warp * 40);
 
-    updateOrient(dt, still);
+    updateKnocks(now, dt, still);
 
     // During the warp the previous frame persists as a trail instead of clearing.
     const fade = warping ? Math.max(0.05, 1 - warp * 1.4) : 1;
@@ -900,66 +960,41 @@ export function startGalaxy(
   ro.observe(canvas);
   resize();
 
+  const startFollow = (x: number, y: number) => {
+    follow.x = follow.tx = x;
+    follow.y = follow.ty = y;
+    follow.vx = follow.vy = 0;
+    follow.on = true;
+  };
   const onMove = (e: PointerEvent) => {
     lastInput = performance.now();
     if (reduceMotion.matches || warping) return;
-    if (e.pointerType === 'mouse') {
-      // Mouse motion gives the disk a gentle push in the direction of travel.
-      if (mouse.seen) {
-        const dx = Math.max(-60, Math.min(60, e.clientX - mouse.x));
-        const dy = Math.max(-60, Math.min(60, e.clientY - mouse.y));
-        orient.vy += dx * 0.012;
-        orient.vp += dy * 0.009;
-        clampSpin();
-      }
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      mouse.seen = true;
-    } else if (drag.active && e.pointerId === drag.id) {
-      // A finger turns the disk directly, like tipping a plate; it follows
-      // the finger through the spring, so it never snaps.
-      const dx = e.clientX - drag.x0;
-      const dy = e.clientY - drag.y0;
-      if (Math.hypot(dx, dy) > 6) drag.moved = true;
-      orient.ty = dx * 0.0085;
-      orient.tp = dy * 0.006;
+    // Mouse hover swipes; a finger swipes while it is down.
+    if (e.pointerType === 'mouse' || e.buttons > 0 || e.pressure > 0) {
+      if (!follow.on) startFollow(e.clientX, e.clientY);
+      follow.tx = e.clientX;
+      follow.ty = e.clientY;
     }
     schedule();
   };
   const onDown = (e: PointerEvent) => {
     lastInput = performance.now();
-    if (reduceMotion.matches || warping || e.pointerType === 'mouse') return;
-    drag.active = true;
-    drag.id = e.pointerId;
-    drag.x0 = e.clientX;
-    drag.y0 = e.clientY;
-    drag.moved = false;
+    if (reduceMotion.matches || warping) return;
+    // Every touch starts where it lands: no streak from the last one.
+    startFollow(e.clientX, e.clientY);
+    const strength = Math.min(1, tapEnergy);
+    tapEnergy = Math.max(0, tapEnergy - 0.3);
+    if (strength > 0.05) addKnock(e.clientX, e.clientY, strength, 0, 1, performance.now());
     schedule();
   };
-  const onUp = (e: PointerEvent) => {
-    if (!drag.active || e.pointerId !== drag.id) return;
-    if (!drag.moved && !reduceMotion.matches && !warping) {
-      // A tap nudges the disk toward where it landed, then it settles.
-      const nx = e.clientX / window.innerWidth - 0.5;
-      const ny = e.clientY / window.innerHeight - 0.5;
-      orient.vy += nx * 1.1;
-      orient.vp += ny * 0.8;
-      clampSpin();
-    }
-    settleOrient();
-    lastInput = performance.now();
-    schedule();
-  };
-  // Leaving, cancelling (the page started scrolling) or blurring lets the
-  // disk spring back to rest.
-  const release = () => {
-    settleOrient();
-    mouse.seen = false;
+  const release = (e?: Event) => {
+    // Lifting a finger ends its swipe; a mouse keeps hovering.
+    if (!(e instanceof PointerEvent) || e.pointerType !== 'mouse') follow.on = false;
   };
   const passive = { passive: true, signal };
   window.addEventListener('pointermove', onMove, passive);
   window.addEventListener('pointerdown', onDown, passive);
-  window.addEventListener('pointerup', onUp, passive);
+  window.addEventListener('pointerup', release, passive);
   window.addEventListener('pointercancel', release, passive);
   document.documentElement.addEventListener('pointerleave', release, { signal });
   window.addEventListener('blur', release, { signal });
@@ -1009,7 +1044,7 @@ export function startGalaxy(
     warp(durationMs: number) {
       if (dead || reduceMotion.matches) return Promise.resolve();
       warping = true;
-      settleOrient();
+      clearKnocks();
       const start = performance.now();
       schedule();
       return new Promise((resolve) => {

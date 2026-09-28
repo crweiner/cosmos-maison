@@ -294,9 +294,9 @@
         "purpose": "Shutter-open warp: the frame stops clearing, rotation accelerates, stars trail and the tone-map exposure rises until the plate burns out to light (no CSS wash). Page and chrome blur out over 500ms; the warp status fades in over 500ms after 250ms. Departure is guaranteed by 2200ms. Skipped under reduced motion."
       },
       {
-        "name": "disk-turn",
-        "value": "yaw up to ~69°, pitch up to ~40°, settles < 1s",
-        "purpose": "The whole galaxy is a disk the visitor tips in 3D, applied in the disk's own frame before its base inclination: a sideways finger drag drives yaw directly (0.0085 rad/px), mouse movement adds angular velocity, a tap nudges toward the tap. A slightly under-damped spring (k=38, zeta 0.72, sub-stepped per frame) returns it to rest; soft limits apply only to the displayed angle. Page keeps vertical scroll and pinch-zoom (touch-action: pan-y pinch-zoom). Off under reduced motion."
+        "name": "star-knock",
+        "value": "~70px reach (swipe), ~60px (tap), 14 CSS px soft cap, ~1s settle",
+        "purpose": "Stars near a swipe path (mouse hover or finger) are knocked along the stroke and slightly outward; a tap knocks nearby stars outward. Each knock rises from zero (t/tp*e^(1-t/tp), tp 0.10-0.18s per star) so nothing snaps; each star takes its own share and heading so groups scatter like particles. The galaxy never moves in 3D; a resting pointer does nothing. Taps draw on a shared energy budget. Off under reduced motion."
       },
       {
         "name": "rotation",
