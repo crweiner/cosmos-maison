@@ -1,0 +1,244 @@
+---
+import { referral, type Brand } from '../data/brands';
+import Icon from './Icon.astro';
+
+interface Props {
+  brand: Brand;
+}
+
+const { brand } = Astro.props;
+// The plate sits on the side of the frame the galaxy leaves empty.
+const side = brand.galaxy.x > 0.5 ? 'left' : 'right';
+const logoH = 48;
+---
+
+<section
+  class:list={['stop', `stop--${side}`]}
+  id={brand.slug}
+  aria-labelledby={`${brand.slug}-name`}
+  data-scene={JSON.stringify(brand.galaxy)}
+>
+  <div class="stop__plate">
+    <h2 class="stop__name" id={`${brand.slug}-name`}>
+      <img
+        src={brand.logo}
+        alt={brand.name}
+        width={Math.round(logoH * brand.logoRatio * brand.logoScale)}
+        height={Math.round(logoH * brand.logoScale)}
+        style={`--logo-scale:${brand.logoScale}`}
+        loading="lazy"
+        decoding="async"
+      />
+    </h2>
+    <p class="stop__tagline">{brand.tagline}</p>
+    <p class="stop__haiku">
+      {brand.haiku.map((line) => <span>{line}</span>)}
+    </p>
+    <a class="stop__link" href={referral(brand.url, 'stop')} data-brand={brand.slug}>
+      <span>Visit {brand.host}</span>
+      <Icon name="out" />
+    </a>
+  </div>
+</section>
+
+<style>
+  .stop {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    /* Viewport-relative so enlarged text can never make the gaps outgrow the screen. */
+    column-gap: min(1.5rem, 1.6vw);
+    align-items: center;
+    padding: clamp(3rem, 12vh, 6rem) var(--gutter-right) clamp(3rem, 12vh, 6rem) var(--gutter-left);
+  }
+
+  .stop__plate {
+    position: relative;
+    grid-column: 2 / span 5;
+    padding: 2.25rem 0 2rem;
+    container-type: inline-size;
+    text-shadow: var(--scrim-text);
+  }
+
+  .stop--right .stop__plate {
+    grid-column: 7 / span 5;
+    padding-left: 2rem;
+  }
+
+  /* Plate annotation: a hairline caliper over the name. */
+  .stop__plate::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: min(9rem, 40%);
+    height: 9px;
+    border: 1px solid var(--ink-faint);
+    border-bottom: 0;
+  }
+
+  .stop--right .stop__plate::before {
+    left: 2rem;
+  }
+
+  .stop__name {
+    margin: 0 0 clamp(0.75rem, 2.5vh, 1.25rem);
+    line-height: 0;
+  }
+
+  /* What the product is, in plain words: quiet, so the haiku stays the voice. */
+  .stop__tagline {
+    margin: 0 0 clamp(1.25rem, 4vh, 2rem);
+    max-width: 34ch;
+    font-size: 1.0625rem;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    text-wrap: balance;
+  }
+
+  .stop__name img {
+    height: calc(clamp(2rem, 1.1rem + 2.2vw, 3.5rem) * var(--logo-scale, 1));
+    width: auto;
+  }
+
+  /*
+   * Haiku lines never wrap: the type is sized from the plate's own width
+   * (the longest line plus its indent fits in ~18 ems).
+   */
+  .stop__haiku {
+    margin: 0 0 clamp(1.5rem, 5vh, 2.5rem);
+    font-family: var(--font-text);
+    font-weight: 300;
+    /* Fallback for browsers without container units; lines may wrap there. */
+    font-size: clamp(1rem, 0.9rem + 1.3vw, 2.5rem);
+    font-size: clamp(1rem, 5.3cqi, 2.5rem);
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  /*
+   * Each verse stays on one line at default sizes (the type is sized from the
+   * plate's width). If enlarged text forces a wrap, the continuation hangs
+   * under the verse so the three lines still read as three.
+   */
+  .stop__haiku span {
+    --step: 0em;
+    display: block;
+    padding-left: calc(var(--step) + 1em);
+    text-indent: -1em;
+  }
+
+  /* The haiku steps down the plate like a hand-set poem. */
+  .stop__haiku span:nth-child(2) {
+    --step: 1.2em;
+  }
+
+  .stop__haiku span:nth-child(3) {
+    --step: 0.6em;
+  }
+
+  .stop__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--hairline);
+    min-width: min(100%, 16rem);
+    min-height: 2.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--gold-bright);
+    transition:
+      color 240ms var(--ease-out),
+      border-color 240ms var(--ease-out);
+  }
+
+  /* A domain has no break point; let it break only if it truly cannot fit. */
+  .stop__link span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .stop__link {
+    max-width: 100%;
+  }
+
+  .stop__link :global(svg) {
+    width: 1rem;
+    height: 1rem;
+    margin-left: auto;
+    transition: transform 320ms var(--ease-out);
+  }
+
+  .stop__link:hover {
+    color: var(--starlight);
+    border-color: var(--gold);
+  }
+
+  .stop__link:hover :global(svg) {
+    transform: translate(3px, -3px);
+  }
+
+  /* Mid widths in landscape: give the plate half the frame. */
+  @media (max-width: 1099px) {
+    .stop__plate {
+      grid-column: 1 / span 6;
+    }
+
+    .stop--right .stop__plate {
+      grid-column: 7 / span 6;
+      padding-left: 0;
+      padding-right: 3.5rem;
+    }
+
+    .stop--right .stop__plate::before {
+      left: 0;
+    }
+  }
+
+  /* Stacked: phones, and portrait tablets. Galaxy above, plate below. */
+  @media (max-width: 759px), (orientation: portrait) and (max-width: 1099px) {
+    .stop {
+      align-items: end;
+      padding-top: 54vh;
+      padding-top: 54svh;
+      padding-bottom: clamp(3.5rem, 8vh, 6rem);
+    }
+
+    .stop__plate,
+    .stop--right .stop__plate {
+      grid-column: 1 / -1;
+      width: min(100%, 36rem);
+      padding-right: 0;
+    }
+  }
+
+  /*
+   * No scripting: one fixed plate, core upper right, for every stop. Side by
+   * side, right-hand plates move to the left so no copy sits on that core.
+   */
+  @media (min-width: 760px) and (orientation: landscape), (min-width: 1100px) {
+    :global(html:not(.js)) .stop--right .stop__plate {
+      grid-column: 2 / span 5;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    :global(html:not(.js)) .stop--right .stop__plate::before {
+      left: 0;
+    }
+  }
+
+  @media (min-width: 760px) and (max-width: 1099px) and (orientation: landscape) {
+    :global(html:not(.js)) .stop--right .stop__plate {
+      grid-column: 1 / span 6;
+    }
+  }
+</style>

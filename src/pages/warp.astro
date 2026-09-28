@@ -1,0 +1,84 @@
+---
+import Base from '../layouts/Base.astro';
+import { trackedTargets } from '../data/brands';
+
+const list = trackedTargets('warp-list');
+const targets = trackedTargets('warp-link');
+---
+
+<Base
+  title="Pick a star · cosmos.maison"
+  description="A link that warps you to one of Automattic's constellation of brands at random."
+  noindex
+>
+  <main id="main" class="warp-page">
+    <h1 class="headline">Pick a star from our constellation</h1>
+    <ul>
+      {list.map((t) => <li><a href={t.url}>{t.name}</a></li>)}
+    </ul>
+    <p><a class="warp-page__home" href="/">Back to cosmos.maison</a></p>
+  </main>
+  <script is:inline define:vars={{ targets }}>
+    // Same rule as the home page: never land on the brand chosen last.
+    var last = null;
+    try { last = sessionStorage.getItem('cosmos:last-warp'); } catch (e) {}
+    var pool = targets.filter(function (t) { return t.name !== last; });
+    if (!pool.length) pool = targets;
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    try { sessionStorage.setItem('cosmos:last-warp', pick.name); } catch (e) {}
+    window.location.replace(pick.url);
+  </script>
+</Base>
+
+<style>
+  .warp-page {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 6rem var(--gutter-right) 6rem var(--gutter-left);
+    max-width: 40rem;
+    text-shadow: var(--scrim-text);
+  }
+
+  @media (max-width: 759px) {
+    .warp-page {
+      align-content: end;
+      padding-bottom: 3rem;
+    }
+  }
+
+  h1 {
+    margin-bottom: 0.5rem;
+  }
+
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--hairline);
+  }
+
+  li a {
+    display: block;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--hairline);
+    text-decoration: none;
+    color: var(--gold-bright);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.9375rem;
+  }
+
+  li a:hover {
+    color: var(--starlight);
+  }
+
+  .warp-page__home {
+    color: var(--ink-soft);
+  }
+</style>

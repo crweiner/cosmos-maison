@@ -1,0 +1,479 @@
+---
+import Base from '../layouts/Base.astro';
+import BrandStop from '../components/BrandStop.astro';
+import StopIndex from '../components/StopIndex.astro';
+import Icon from '../components/Icon.astro';
+import { brands, heroGalaxy, trackedTargets } from '../data/brands';
+
+const first = brands[0];
+---
+
+<Base
+  title="Welcome to our Cosmos · cosmos.maison"
+  description="Automattic's constellation of brands: Tumblr, Day One, Pocket Casts, Me.sh, Spacefast and Beeper. Or warp to a random one."
+  sky="live"
+>
+  <canvas slot="sky" class="sky" id="sky" aria-hidden="true"></canvas>
+
+  <header class="masthead">
+    <a href="#top" class="caption masthead__mark">cosmos.maison</a>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title" data-scene={JSON.stringify(heroGalaxy)} data-hero>
+      <div class="hero__copy">
+        <h1 id="hero-title">Welcome to our Cosmos</h1>
+        <p class="hero__lede">Explore Automattic's constellation of brands</p>
+        <div class="hero__actions">
+          <a class="btn btn--warp" href="/warp/" data-warp>
+            <span>Warp to a random Cosmos</span>
+            <Icon name="warp" />
+          </a>
+          <a class="btn btn--explore" href={`#${first.slug}`}>
+            <span>I want to explore</span>
+            <Icon name="down" />
+          </a>
+        </div>
+      </div>
+    </section>
+
+    {brands.map((brand) => <BrandStop brand={brand} />)}
+
+    <section class="close" aria-labelledby="close-title" data-scene={JSON.stringify({ ...heroGalaxy, tilt: 1.2, angle: -0.08, warmth: 0.6 })} data-close>
+      <h2 id="close-title" class="headline">Pick&nbsp;a&nbsp;star, any&nbsp;star</h2>
+      <div class="close__actions">
+        <a class="btn btn--warp" href="/warp/" data-warp>
+          <span>Warp to a random Cosmos</span>
+          <Icon name="warp" />
+        </a>
+        <a class="btn btn--explore" href="#top">
+          <span>Back to the top</span>
+          <Icon name="up" />
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <StopIndex brands={brands} />
+
+  <p class="plate-id caption" aria-hidden="true"><span data-plate-id>Plate 1 / {brands.length}</span></p>
+
+  <footer class="colophon">
+    <p class="caption">cosmos.maison · A constellation of brands from Automattic</p>
+  </footer>
+
+  <p slot="overlay" class="warp-status" role="status" aria-live="polite"></p>
+
+  <script is:inline define:vars={{ targets: trackedTargets('warp') }}>
+    window.__cosmosTargets = targets;
+  </script>
+</Base>
+
+<script>
+  import { startGalaxy, type GalaxyController, type Scene } from '../scripts/galaxy';
+
+  const root = document.documentElement;
+  const canvas = document.getElementById('sky') as HTMLCanvasElement;
+  const sceneEls = [...document.querySelectorAll<HTMLElement>('[data-scene]')];
+  const scenes: Scene[] = sceneEls.map((el) => ({
+    el,
+    kind: el.hasAttribute('data-hero') ? 'hero' : el.hasAttribute('data-close') ? 'close' : 'stop',
+    shape: JSON.parse(el.dataset.scene!),
+  }));
+
+  /*
+   * The live sky is an enhancement. If it cannot start, or the browser later
+   * drops its GPU context, the page falls back to the still plate and every
+   * link and button keeps working.
+   */
+  let sky: GalaxyController | null = null;
+
+  function showPlate() {
+    root.classList.remove('has-sky');
+    root.classList.add('no-sky');
+  }
+
+  function boot(target: HTMLCanvasElement): boolean {
+    try {
+      sky = startGalaxy(target, scenes, { onLost: () => lose(target) });
+    } catch (err) {
+      console.warn('[cosmos] live sky unavailable:', err);
+      sky = null;
+    }
+    if (sky) {
+      root.classList.remove('no-sky');
+      root.classList.add('has-sky');
+    }
+    return !!sky;
+  }
+
+  function lose(lost: HTMLCanvasElement) {
+    sky = null;
+    lost.style.visibility = 'hidden';
+    showPlate();
+    // When the GPU comes back, start over on a fresh canvas.
+    lost.addEventListener(
+      'webglcontextrestored',
+      () => {
+        const fresh = lost.cloneNode() as HTMLCanvasElement;
+        fresh.style.visibility = '';
+        lost.replaceWith(fresh);
+        if (!boot(fresh)) fresh.remove();
+      },
+      { once: true },
+    );
+  }
+
+  if (!boot(canvas)) {
+    canvas.remove();
+    showPlate();
+  }
+
+  // --- Warp: an "I'm Feeling Lucky" jump to one Cosmos brand ------------------
+  type Target = { name: string; url: string };
+  const listed = (window as unknown as { __cosmosTargets?: Target[] }).__cosmosTargets;
+  // Without the destination list, leave the buttons as plain links to /warp/.
+  const targets: Target[] = Array.isArray(listed) ? listed : [];
+  const status = document.querySelector<HTMLElement>('.warp-status')!;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function pickTarget(): Target {
+    let lastName: string | null = null;
+    try {
+      lastName = sessionStorage.getItem('cosmos:last-warp');
+    } catch {}
+    // Never land on the same brand twice in a row.
+    const pool = targets.length > 1 ? targets.filter((t) => t.name !== lastName) : targets;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    try {
+      sessionStorage.setItem('cosmos:last-warp', pick.name);
+    } catch {}
+    return pick;
+  }
+
+  let warping = false;
+  for (const btn of targets.length ? document.querySelectorAll<HTMLAnchorElement>('[data-warp]') : []) {
+    btn.addEventListener('click', async (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      if (warping) return;
+      warping = true;
+      const target = pickTarget();
+      const animated = !!sky && !reduceMotion.matches;
+      // Without the shutter (reduced motion, or no live sky) the visitor still
+      // sees, and hears, where they are going before the page changes.
+      status.textContent = animated ? `Warping to ${target.name}` : `Taking you to ${target.name}…`;
+      root.classList.add('is-warping');
+      root.classList.toggle('warp-still', !animated);
+      if (!animated) {
+        await new Promise((done) => setTimeout(done, 700));
+      } else if (sky) {
+        // Leave on time even if the browser stops sending animation frames mid-warp.
+        await Promise.race([sky.warp(1500), new Promise((done) => setTimeout(done, 2200))]);
+      }
+      window.location.assign(target.url);
+    });
+  }
+
+  // Returning with the back button restores the page from cache mid-warp.
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    warping = false;
+    root.classList.remove('is-warping', 'warp-still');
+    status.textContent = '';
+    sky?.reset();
+  });
+
+  // --- Stop index: mark the stop in view -------------------------------------
+  const links = new Map(
+    [...document.querySelectorAll<HTMLAnchorElement>('[data-index-link]')].map((a) => [a.dataset.indexLink!, a]),
+  );
+  const hero = document.getElementById('top')!;
+  const closing = document.querySelector<HTMLElement>('.close')!;
+  const plateId = document.querySelector<HTMLElement>('[data-plate-id]')!;
+  root.classList.add('at-top');
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const el = entry.target as HTMLElement;
+        if (el === hero) {
+          root.classList.toggle('at-top', entry.isIntersecting);
+          if (entry.isIntersecting) root.classList.remove('plate-mirror');
+          continue;
+        }
+        if (el === closing) {
+          root.classList.toggle('at-close', entry.isIntersecting);
+          if (entry.isIntersecting) root.classList.remove('plate-mirror');
+          continue;
+        }
+        const link = links.get(el.id);
+        if (!link) continue;
+        if (entry.isIntersecting) {
+          // Only seen without the live sky: mirror the still plate to this stop's side.
+          root.classList.toggle('plate-mirror', el.classList.contains('stop--right'));
+          links.forEach((l) => l.removeAttribute('aria-current'));
+          link.setAttribute('aria-current', 'location');
+        } else if (link.getAttribute('aria-current')) {
+          link.removeAttribute('aria-current');
+        }
+      }
+    },
+    { rootMargin: '-45% 0px -45% 0px' },
+  );
+  io.observe(hero);
+  io.observe(closing);
+  document.querySelectorAll<HTMLElement>('.stop').forEach((s) => io.observe(s));
+
+  // The plate designation names a stop only while that stop fills most of the
+  // screen; between stops it steps aside, so it never labels the wrong plate
+  // or sits on a haiku passing through the corner.
+  const stopIds = [...links.keys()];
+  const plateIo = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const el = entry.target as HTMLElement;
+        if (entry.intersectionRatio >= 0.72) {
+          const n = stopIds.indexOf(el.id) + 1;
+          plateId.textContent = `Plate ${n} / ${stopIds.length} · ${links.get(el.id)?.textContent?.trim()}`;
+          plateId.dataset.for = el.id;
+          root.classList.add('plate-settled');
+        } else if (plateId.dataset.for === el.id) {
+          root.classList.remove('plate-settled');
+        }
+      }
+    },
+    { threshold: [0, 0.5, 0.72, 0.9] },
+  );
+  document.querySelectorAll<HTMLElement>('.stop').forEach((s) => plateIo.observe(s));
+</script>
+
+<style>
+  .masthead {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    padding: max(clamp(1.5rem, 2.6vw, 2.5rem), env(safe-area-inset-top)) var(--gutter-right) 0 var(--gutter-left);
+  }
+
+  .masthead__mark {
+    display: inline-block;
+    padding-block: 0.5rem;
+    margin-block: -0.5rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: end;
+    padding: 7rem var(--gutter-right) clamp(3.5rem, 9vh, 7rem) var(--gutter-left);
+  }
+
+  .hero__copy {
+    max-width: 44rem;
+    text-shadow: var(--scrim-display);
+  }
+
+  h1 {
+    margin: 0 0 1.25rem;
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: clamp(min(2.4rem, 11vw), min(0.9rem + 6.2vw, 12.5vh), 6rem);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    max-width: 11ch;
+    text-wrap: balance;
+  }
+
+  .hero__lede {
+    margin: 0 0 2.5rem;
+    max-width: 34ch;
+    text-wrap: balance;
+    font-size: clamp(1.15rem, 0.95rem + 0.8vw, 1.5rem);
+    font-weight: 300;
+    line-height: 1.4;
+    color: var(--ink-soft);
+  }
+
+  .hero__actions,
+  .close__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+  }
+
+  .close {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 2.5rem;
+    padding: 6rem var(--gutter-right) 34vh var(--gutter-left);
+    text-align: center;
+  }
+
+
+  .close__actions {
+    justify-content: center;
+  }
+
+  /* Plate designation, set beside the lower-left registration mark. */
+  .plate-id {
+    position: fixed;
+    left: calc(max(clamp(0.75rem, 1.6vw, 1.5rem), env(safe-area-inset-left)) + 28px);
+    bottom: max(clamp(0.75rem, 1.6vw, 1.5rem), env(safe-area-inset-bottom));
+    z-index: 5;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    text-shadow: var(--scrim-label);
+    transform: translateY(40%);
+    transition: opacity 240ms var(--ease-out);
+    pointer-events: none;
+  }
+
+  /*
+   * em media queries follow the visitor's text-size setting: on narrow screens
+   * or with enlarged text the pinned caption would sit on the haiku, and the
+   * stop index already shows the position.
+   */
+  @media (max-width: 23em) {
+    .plate-id {
+      display: none;
+    }
+  }
+
+  :global(html:not(.plate-settled)) .plate-id,
+  :global(html.at-top) .plate-id,
+  :global(html.at-close) .plate-id {
+    opacity: 0;
+  }
+
+  .colophon {
+    position: relative;
+    z-index: 5;
+    padding: 0 var(--gutter-right) max(clamp(2rem, 4vw, 3rem), env(safe-area-inset-bottom)) var(--gutter-left);
+    text-align: center;
+  }
+
+  .colophon p {
+    margin: 0;
+    text-shadow: var(--scrim-text);
+    color: var(--ink-soft);
+    letter-spacing: 0.06em;
+  }
+
+  /* ---- Warp ------------------------------------------------------------ */
+
+  .warp-status {
+    position: fixed;
+    left: 50%;
+    bottom: max(clamp(2.5rem, 8vh, 5rem), calc(env(safe-area-inset-bottom) + 1.5rem));
+    z-index: 30;
+    margin: 0;
+    transform: translateX(-50%);
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 0.95rem + 0.8vw, 1.5rem);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--starlight);
+    /* Stays legible as the plate burns from black to white. */
+    mix-blend-mode: difference;
+    max-width: calc(100vw - 2 * var(--gutter));
+    text-align: center;
+    opacity: 0;
+    transition: opacity 500ms var(--ease-out) 250ms;
+    pointer-events: none;
+  }
+
+
+  :global(html.is-warping .page),
+  :global(html.is-warping .index),
+  :global(html.is-warping .registration),
+  :global(html.is-warping .plate-id) {
+    opacity: 0;
+    filter: blur(6px);
+    transition:
+      opacity 500ms var(--ease-out),
+      filter 500ms var(--ease-out);
+  }
+
+  :global(html.is-warping) .warp-status {
+    opacity: 1;
+  }
+
+  /* Still hand-off (no shutter): the destination has to read within ~700ms. */
+  :global(html.warp-still) .warp-status {
+    transition: opacity 180ms var(--ease-out);
+  }
+
+  :global(html.warp-still .page),
+  :global(html.warp-still .index),
+  :global(html.warp-still .registration),
+  :global(html.warp-still .plate-id) {
+    filter: none;
+    transition: opacity 180ms var(--ease-out);
+  }
+
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.is-warping .page) {
+      filter: none;
+    }
+
+    /* A still hand-off: the page steps back and the destination appears at once. */
+    :global(html.is-warping .page),
+    :global(html.is-warping .index),
+    :global(html.is-warping .registration),
+    :global(html.is-warping .plate-id),
+    .warp-status {
+      transition: none;
+    }
+  }
+
+  /* Short landscape screens (phones on their side): tighten the stack. */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .hero {
+      padding-top: 4.5rem;
+      padding-bottom: 1.75rem;
+    }
+
+    h1 {
+      margin-bottom: 0.75rem;
+    }
+
+    .hero__lede {
+      margin-bottom: 1.25rem;
+    }
+
+    .hero__actions :global(.btn),
+    .close__actions :global(.btn) {
+      --btn-h: 3rem;
+    }
+
+    .close {
+      gap: 1.5rem;
+      padding-block: 3rem;
+    }
+  }
+
+  @media (max-width: 759px) {
+    .hero {
+      padding-bottom: 3rem;
+    }
+
+    .hero__actions {
+      flex-direction: column;
+      align-items: stretch;
+      max-width: 22rem;
+    }
+  }
+</style>
