@@ -74,7 +74,7 @@ const { brands } = Astro.props;
 
   a:hover .index__label,
   a:focus-visible .index__label,
-  a[aria-current='true'] .index__label {
+  a[aria-current] .index__label {
     opacity: 1;
     transform: none;
   }
@@ -84,11 +84,11 @@ const { brands } = Astro.props;
     background: var(--ink);
   }
 
-  a[aria-current='true'] {
+  a[aria-current] {
     color: var(--ink);
   }
 
-  a[aria-current='true'] .index__tick {
+  a[aria-current] .index__tick {
     width: 28px;
     background: var(--gold);
   }
@@ -116,7 +116,7 @@ const { brands } = Astro.props;
       width: 10px;
     }
 
-    a[aria-current='true'] .index__tick {
+    a[aria-current] .index__tick {
       width: 18px;
     }
   }

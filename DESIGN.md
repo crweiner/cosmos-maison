@@ -247,13 +247,13 @@ Plate labels, not pills: flat, uppercase, precise.
 - **Enlarged text:** a label stays on one line at default sizes and wraps balanced inside the button, never overflowing it.
 
 ### Brand Plate (signature)
-The per-brand annotation block. A hairline caliper over the official brand mark, the haiku in verse type, then an outbound link: gold-bright caption-step uppercase text on a 1px hairline rule, at least 16rem wide and 2.75rem tall, icon pushed to the far end. Hover whitens the text, turns the rule gold and nudges the out-arrow up-right. A domain breaks only if it truly cannot fit. Official marks are shown as the brand publishes them, reversed for the void where needed.
+The per-brand annotation block. A hairline caliper over the official brand mark, then one plain line saying what the product is (body size, 1.0625rem, weight 400, soft ink, balanced, at most 34ch: a description, never a claim), the haiku in verse type, then an outbound link: gold-bright caption-step uppercase text on a 1px hairline rule, at least 16rem wide and 2.75rem tall, icon pushed to the far end. Hover whitens the text, turns the rule gold and nudges the out-arrow up-right. A domain breaks only if it truly cannot fit. Official marks are shown as the brand publishes them, reversed for the void where needed.
 
 ### Stop Index (navigation)
 A catalog strip of 1px ticks on the right edge, one per brand. Ticks rest at 14px in faint ink; hover brightens to ink and reveals the uppercase caption name; the current stop widens to 28px in gold with its name shown in ink. On phones and short screens it compacts to 10px / 18px ticks with no names. On touch the tick stays small but each tap area is at least 44 by 44px, dropping to 32px tall on short landscape screens so six rows still fit.
 
 ### Plate Designation
-An uppercase caption beside the lower-left registration mark reading "Plate n / total · Brand", updated as each stop enters, faded out on hero and close.
+An uppercase caption beside the lower-left registration mark reading "Plate n / total · Brand", carrying the label scrim. It shows only while one stop fills most of the screen (72% or more visible) and steps aside between stops, on the hero and at the close, so it never names the wrong plate or sits on a passing haiku.
 
 ### Registration Frame
 Four 18px L-shaped hairline corners in faint ink, fixed at the frame inset (or the safe area, whichever is larger), present on every page.

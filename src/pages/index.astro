@@ -208,9 +208,7 @@ const first = brands[0];
         if (!link) continue;
         if (entry.isIntersecting) {
           links.forEach((l) => l.removeAttribute('aria-current'));
-          link.setAttribute('aria-current', 'true');
-          const n = [...links.keys()].indexOf(el.id) + 1;
-          plateId.textContent = `Plate ${n} / ${links.size} · ${link.textContent?.trim()}`;
+          link.setAttribute('aria-current', 'location');
         } else if (link.getAttribute('aria-current')) {
           link.removeAttribute('aria-current');
         }
@@ -221,6 +219,28 @@ const first = brands[0];
   io.observe(hero);
   io.observe(closing);
   document.querySelectorAll<HTMLElement>('.stop').forEach((s) => io.observe(s));
+
+  // The plate designation names a stop only while that stop fills most of the
+  // screen; between stops it steps aside, so it never labels the wrong plate
+  // or sits on a haiku passing through the corner.
+  const stopIds = [...links.keys()];
+  const plateIo = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const el = entry.target as HTMLElement;
+        if (entry.intersectionRatio >= 0.72) {
+          const n = stopIds.indexOf(el.id) + 1;
+          plateId.textContent = `Plate ${n} / ${stopIds.length} · ${links.get(el.id)?.textContent?.trim()}`;
+          plateId.dataset.for = el.id;
+          root.classList.add('plate-settled');
+        } else if (plateId.dataset.for === el.id) {
+          root.classList.remove('plate-settled');
+        }
+      }
+    },
+    { threshold: [0, 0.5, 0.72, 0.9] },
+  );
+  document.querySelectorAll<HTMLElement>('.stop').forEach((s) => plateIo.observe(s));
 </script>
 
 <style>
@@ -310,8 +330,9 @@ const first = brands[0];
     margin: 0;
     font-size: 0.8125rem;
     color: var(--ink-soft);
+    text-shadow: var(--scrim-label);
     transform: translateY(40%);
-    transition: opacity 400ms var(--ease-out);
+    transition: opacity 240ms var(--ease-out);
     pointer-events: none;
   }
 
@@ -326,6 +347,7 @@ const first = brands[0];
     }
   }
 
+  :global(html:not(.plate-settled)) .plate-id,
   :global(html.at-top) .plate-id,
   :global(html.at-close) .plate-id {
     opacity: 0;
@@ -340,6 +362,7 @@ const first = brands[0];
 
   .colophon p {
     margin: 0;
+    text-shadow: var(--scrim-text);
     color: var(--ink-soft);
     letter-spacing: 0.06em;
   }

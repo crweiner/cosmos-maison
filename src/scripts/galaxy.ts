@@ -202,11 +202,16 @@ void main() {
     float sy = exp(-abs(p.x) * 160.0) * (1.0 - smoothstep(0.0, 0.5, abs(p.y)));
     a = core + halo + (sx + sy) * 0.55;
   } else if (u_pass == ${PASS_DUST}) {
-    float k = v_color.a * exp(-d2 * 9.0) * (1.0 - smoothstep(0.2, 0.25, d2));
+    // Falls to zero at the sprite edge: overlapping sprites leave no rims.
+    float soft = max(0.0, 1.0 - d2 * 4.0);
+    float k = v_color.a * soft * soft;
     gl_FragColor = vec4(mix(vec3(1.0), v_color.rgb, k), 1.0);
     return;
   } else if (u_pass == ${PASS_GAS}) {
-    a = exp(-d2 * 9.0) * (1.0 - smoothstep(0.2, 0.25, d2));
+    // Falls to zero at the sprite edge. A cut-off Gaussian left a faint rim on
+    // every sprite, and dense cores stacked those rims into a hard-edged block.
+    float soft = max(0.0, 1.0 - d2 * 4.0);
+    a = soft * soft;
   } else {
     a = exp(-d2 * 22.0) * (1.0 - smoothstep(0.2, 0.25, d2));
   }
@@ -578,6 +583,8 @@ export function startGalaxy(
   let slowFrames = 0;
   let drawn = 0;
   let prevActive = true;
+  let lastScrollY = window.scrollY;
+  let scrollDir = 1;
 
   function resize() {
     const w = canvas.clientWidth;
@@ -618,6 +625,12 @@ export function startGalaxy(
     const top = list.slice(0, 2).filter((s) => s.w > 0);
     if (!top.length) return [{ i: 0, w: 1, offset: 0 }];
     if (reduceMotion.matches) return [{ ...top[0], w: 1, offset: 0 }];
+    // The galaxy scrolling in waits until the outgoing stop's text has mostly
+    // left, so text never sits over two cores at once.
+    if (top.length === 2) {
+      const incoming = top.find((s) => Math.sign(s.offset) === scrollDir);
+      if (incoming) incoming.w *= incoming.w;
+    }
     // Smoothstep the pair so the crossfade lingers on each galaxy.
     const sum = top.reduce((a, s) => a + s.w, 0);
     return top.map((s) => {
@@ -646,7 +659,8 @@ export function startGalaxy(
       // A near edge-on disk lying under the closing call, like a horizon.
       radius = stacked ? cssW * 0.95 : Math.min(frame * 0.46, cssH * 0.9);
       x = cssW / 2;
-      y = cssH * (stacked ? 0.82 : 0.8);
+      // High enough that the colophon at the page end sits on dark sky.
+      y = cssH * (stacked ? 0.7 : 0.66);
     } else if (scene.kind === 'hero') {
       // On ultra-wide screens the spiral grows with the width so it stays full-bleed.
       radius = stacked
@@ -861,7 +875,16 @@ export function startGalaxy(
   window.addEventListener('pointercancel', release, passive);
   document.documentElement.addEventListener('pointerleave', release, { signal });
   window.addEventListener('blur', release, { signal });
-  window.addEventListener('scroll', invalidate, passive);
+  window.addEventListener(
+    'scroll',
+    () => {
+      const y = window.scrollY;
+      if (y !== lastScrollY) scrollDir = y > lastScrollY ? 1 : -1;
+      lastScrollY = y;
+      invalidate();
+    },
+    passive,
+  );
   document.addEventListener(
     'visibilitychange',
     () => {
