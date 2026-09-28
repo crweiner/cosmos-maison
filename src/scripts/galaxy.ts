@@ -20,9 +20,14 @@ const PASS_STARS = 2;
 const PASS_FIELD = 3;
 const PASS_SPIKES = 4;
 
-/** Pointer impulses the shader remembers: wake points plus tap ripples. */
-const IMPULSES = 16;
-const WAKE_SLOTS = 12;
+/**
+ * Stir inputs the shader reads: a chain of smoothed pointer followers (the
+ * wake), then a few tap ripples. Every input changes continuously, so the
+ * stars flow rather than step.
+ */
+const FOLLOWERS = 4;
+const RIPPLES = 6;
+const IMPULSES = FOLLOWERS + RIPPLES;
 
 const VERT = /* glsl */ `
 precision highp float;
@@ -69,36 +74,44 @@ const vec3 BLUEWHITE = vec3(0.78, 0.90, 0.98);
  * leaves a wake that eases back; a tap sends a soft ring outward. The total
  * displacement is capped so repeated input can only ever shimmer.
  */
+// WebGL 1 has no built-in tanh.
+float softSat(float x) {
+  float e = exp(-2.0 * abs(x));
+  return sign(x) * (1.0 - e) / (1.0 + e);
+}
+
 vec2 stir(vec2 px) {
   vec2 disp = vec2(0.0);
   float reach = 150.0 * u_dpr;
   for (int i = 0; i < ${IMPULSES}; i++) {
     vec2 meta = u_impMeta[i];
     float age = meta.x;
-    if (age < 0.0 || age > 1.6) continue;
+    if (age < 0.0) continue;
     vec4 im = u_imp[i];
     vec2 d = px - im.xy;
     float r2 = dot(d, d);
     if (meta.y < 0.5) {
+      // Follower: its drag vector already carries speed, shaping and weight.
       float fall = exp(-r2 / (reach * reach));
-      if (fall < 0.01) continue;
-      // Full drag at once, then an exponential settle (~1s to rest).
-      float life = exp(-age * 3.4);
+      if (fall < 0.005) continue;
       float len = max(sqrt(r2), 1.0);
       vec2 curl = vec2(-d.y, d.x) / len * length(im.zw) * 0.35;
-      disp += (im.zw + curl) * fall * life * 7.0 * u_dpr;
+      disp += (im.zw + curl) * fall;
     } else {
+      // Tap ripple: a ring that eases in, travels outward and fades.
+      if (age > 0.9) continue;
       float dist = sqrt(r2);
       float front = age * 240.0 * u_dpr;
       float band = 38.0 * u_dpr;
       float ring = exp(-((dist - front) * (dist - front)) / (band * band));
-      float life = 1.0 - smoothstep(0.0, 0.8, age);
+      float life = smoothstep(0.0, 0.12, age) * (1.0 - smoothstep(0.35, 0.9, age));
       disp += (d / max(dist, 1.0)) * ring * life * im.z * 6.0 * u_dpr;
     }
   }
+  // Soft ceiling: approaches ~15 CSS px smoothly instead of clipping.
   float cap = 15.0 * u_dpr;
   float m = length(disp);
-  return m > cap ? disp * (cap / m) : disp;
+  return m > 0.0001 ? disp * (cap * softSat(m / cap) / m) : disp;
 }
 
 void main() {
@@ -611,16 +624,16 @@ export function startGalaxy(
   let dpr = 1;
   let W = 0;
   let H = 0;
-  // Raw pointer, and a smoothed follower (~0.1s lag) that the stir reads, so
-  // jitter or a sudden jump never snaps the stars.
-  const pointer = { x: 0, y: 0, active: false };
-  const follow = { x: 0, y: 0, vx: 0, vy: 0 };
+  // Raw pointer, and a chain of followers that trail it with increasing lag:
+  // the first tracks closely, the last lazily, so their motion forms a wake.
+  const pointer = { x: 0, y: 0, active: false, seen: false };
+  const LAG = [0.07, 0.16, 0.3, 0.5]; // seconds
+  const WEIGHT = [0.55, 0.8, 0.9, 0.75];
+  const followers = LAG.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
   const impData = new Float32Array(IMPULSES * 4);
-  const impMeta = new Float32Array(IMPULSES * 2);
-  const impBorn = new Float64Array(IMPULSES).fill(-1e9);
-  let wakeNext = 0;
-  let rippleNext = WAKE_SLOTS;
-  let lastWake = 0;
+  const impMeta = new Float32Array(IMPULSES * 2).fill(-1);
+  const rippleBorn = new Float64Array(RIPPLES).fill(-1e9);
+  let rippleNext = 0;
   // Tap ripples draw from a shared budget that refills over ~0.9s.
   let rippleEnergy = 1;
   let warp = 0;
@@ -803,45 +816,51 @@ export function startGalaxy(
     }
   }
 
-  function pushImpulse(slot: number, x: number, y: number, zx: number, zy: number, kind: number, now: number) {
-    impData.set([x * dpr, y * dpr, zx, zy], slot * 4);
-    impMeta[slot * 2 + 1] = kind;
-    impBorn[slot] = now;
-  }
-
   function clearImpulses() {
-    impBorn.fill(-1e9);
-    for (let i = 0; i < IMPULSES; i++) impMeta[i * 2] = -1;
+    rippleBorn.fill(-1e9);
+    for (const f of followers) f.vx = f.vy = 0;
+    impMeta.fill(-1);
   }
 
-  /** Ease the follower toward the pointer, lay wake points while it moves, age everything. */
+  function chainSpeed() {
+    return followers.reduce((m, f) => Math.max(m, Math.hypot(f.vx, f.vy)), 0);
+  }
+
+  /** Advance the follower chain and ripple ages; write the shader's inputs. */
   function updateStir(now: number, dt: number, still: boolean) {
-    if (still || warping) {
-      clearImpulses();
+    if (still || warping || !pointer.seen) {
+      impMeta.fill(-1);
       return;
     }
     rippleEnergy = Math.min(1, rippleEnergy + dt / 0.9);
-    if (pointer.active && dt > 0) {
-      const k = 1 - Math.exp(-dt / 0.1);
-      const nx = follow.x + (pointer.x - follow.x) * k;
-      const ny = follow.y + (pointer.y - follow.y) * k;
-      const vx = (nx - follow.x) / dt;
-      const vy = (ny - follow.y) / dt;
-      follow.vx += (vx - follow.vx) * 0.4;
-      follow.vy += (vy - follow.vy) * 0.4;
-      follow.x = nx;
-      follow.y = ny;
-      const speed = Math.hypot(follow.vx, follow.vy);
-      if (speed > 40 && now - lastWake > 80) {
-        const strength = Math.min(1, Math.max(0.2, speed / 1000));
-        pushImpulse(wakeNext, follow.x, follow.y, (follow.vx / speed) * strength, (follow.vy / speed) * strength, 0, now);
-        wakeNext = (wakeNext + 1) % WAKE_SLOTS;
-        lastWake = now;
+    let tx = pointer.x;
+    let ty = pointer.y;
+    followers.forEach((f, k) => {
+      const a = dt > 0 ? 1 - Math.exp(-dt / LAG[k]) : 0;
+      const nx = f.x + (tx - f.x) * a;
+      const ny = f.y + (ty - f.y) * a;
+      if (dt > 0) {
+        // Velocity is itself smoothed so uneven pointer events never pulse.
+        const b = 1 - Math.exp(-dt / 0.06);
+        f.vx += ((nx - f.x) / dt - f.vx) * b;
+        f.vy += ((ny - f.y) / dt - f.vy) * b;
       }
-    }
-    for (let i = 0; i < IMPULSES; i++) {
-      const age = (now - impBorn[i]) / 1000;
-      impMeta[i * 2] = age <= 1.6 ? age : -1;
+      f.x = nx;
+      f.y = ny;
+      // Drag grows with speed and saturates smoothly (about 6 CSS px each).
+      const speed = Math.hypot(f.vx, f.vy);
+      const mag = speed > 0.001 ? (6 * Math.tanh(speed / 900) * WEIGHT[k]) / speed : 0;
+      impData.set([f.x * dpr, f.y * dpr, f.vx * mag * dpr, f.vy * mag * dpr], k * 4);
+      impMeta[k * 2] = speed > 0.5 ? 0 : -1;
+      impMeta[k * 2 + 1] = 0;
+      tx = f.x;
+      ty = f.y;
+    });
+    for (let i = 0; i < RIPPLES; i++) {
+      const slot = FOLLOWERS + i;
+      const age = (now - rippleBorn[i]) / 1000;
+      impMeta[slot * 2] = age <= 0.9 ? age : -1;
+      impMeta[slot * 2 + 1] = 1;
     }
   }
 
@@ -953,36 +972,41 @@ export function startGalaxy(
   const onMove = (e: PointerEvent) => {
     pointer.x = e.clientX;
     pointer.y = e.clientY;
-    if (!pointer.active) {
-      // First contact: start the follower here, with no streak from elsewhere.
-      follow.x = e.clientX;
-      follow.y = e.clientY;
-      follow.vx = follow.vy = 0;
-      pointer.active = true;
+    // First contact (or contact after the wake has settled): start the chain
+    // here, so nothing streaks in from the previous spot.
+    if (!pointer.seen || (!pointer.active && chainSpeed() < 60)) {
+      for (const f of followers) {
+        f.x = e.clientX;
+        f.y = e.clientY;
+        f.vx = f.vy = 0;
+      }
     }
+    pointer.active = true;
+    pointer.seen = true;
     lastInput = performance.now();
     schedule();
   };
   const onDown = (e: PointerEvent) => {
     if (e.pointerType === 'touch' || e.pointerType === 'pen') {
-      // A new touch begins where the finger lands, never swept from the last one.
       pointer.active = false;
       onMove(e);
       if (!reduceMotion.matches && !warping) {
         const strength = Math.min(1, rippleEnergy);
         rippleEnergy = Math.max(0, rippleEnergy - 0.35);
         if (strength > 0.05) {
-          pushImpulse(rippleNext, e.clientX, e.clientY, strength, 0, 1, performance.now());
-          rippleNext = rippleNext + 1 >= IMPULSES ? WAKE_SLOTS : rippleNext + 1;
+          const i = rippleNext;
+          rippleNext = (rippleNext + 1) % RIPPLES;
+          impData.set([e.clientX * dpr, e.clientY * dpr, strength, 0], (FOLLOWERS + i) * 4);
+          rippleBorn[i] = performance.now();
         }
       }
     } else {
       onMove(e);
     }
   };
+  // Lifting or leaving only stops new input; the chain settles on its own.
   const release = () => {
     pointer.active = false;
-    follow.vx = follow.vy = 0;
   };
   const passive = { passive: true, signal };
   window.addEventListener('pointermove', onMove, passive);

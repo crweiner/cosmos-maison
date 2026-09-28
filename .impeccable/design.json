@@ -296,7 +296,7 @@
       {
         "name": "pointer-stir",
         "value": "~150 CSS px reach, 15 CSS px cap, ~1s settle",
-        "purpose": "Stars respond to pointer and touch movement, never to a resting pointer: a smoothed follower (~0.1s lag) lays wake points while moving; nearby stars drag along the path with a slight curl and ease back over ~1s. Taps send a soft ring (fades in ~0.8s) from a shared energy budget so rapid taps only shimmer. Off under reduced motion."
+        "purpose": "Stars respond to pointer and touch movement, never to a resting pointer. A chain of four smoothed followers (0.07/0.16/0.3/0.5s lag) trails the pointer; each drags nearby stars by its own smoothed speed (saturating, ~6 CSS px) with a slight curl, so the wake flows continuously and settles as the chain catches up. Nothing is emitted or removed in steps (a discrete-impulse version shook at ~12Hz). Taps send a ring that eases in and fades within 0.9s, from a shared energy budget. Total displacement soft-capped near 15 CSS px. Off under reduced motion."
       },
       {
         "name": "rotation",
