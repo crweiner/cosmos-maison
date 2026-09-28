@@ -65,6 +65,14 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/*
+ * On the live sky, the browser keeps vertical scrolling and pinch-zoom while
+ * sideways finger drags reach the galaxy, which the visitor can tip and turn.
+ */
+html[data-sky='live'] body {
+  touch-action: pan-y pinch-zoom;
+}
+
 ::selection {
   background: var(--gold);
   color: var(--void);

@@ -20,15 +20,6 @@ const PASS_STARS = 2;
 const PASS_FIELD = 3;
 const PASS_SPIKES = 4;
 
-/**
- * Stir inputs the shader reads: a chain of smoothed pointer followers (the
- * wake), then a few tap ripples. Every input changes continuously, so the
- * stars flow rather than step.
- */
-const FOLLOWERS = 4;
-const RIPPLES = 6;
-const IMPULSES = FOLLOWERS + RIPPLES;
-
 const VERT = /* glsl */ `
 precision highp float;
 precision highp int;
@@ -48,11 +39,10 @@ uniform float u_warmth;
 uniform vec2 u_center;
 uniform float u_scale;
 uniform float u_alpha;
-// Recent pointer impulses in device px: xy = position, zw = drag vector
-// (unit direction x strength) for a wake, or (strength, 0) for a tap ripple.
-uniform vec4 u_imp[${IMPULSES}];
-// x = age in seconds (negative = empty slot), y = kind (0 wake, 1 ripple).
-uniform vec2 u_impMeta[${IMPULSES}];
+// Interactive orientation (radians): the disk is turned around the screen's
+// vertical axis (yaw) and horizontal axis (pitch) by pointer and touch.
+uniform float u_yaw;
+uniform float u_pitch;
 uniform float u_warp;
 uniform float u_headroom;
 uniform float u_pointScale;
@@ -68,52 +58,6 @@ const vec3 RUST = vec3(0.78, 0.30, 0.22);
 const vec3 WHITE = vec3(0.96, 0.94, 0.90);
 const vec3 BLUEWHITE = vec3(0.78, 0.90, 0.98);
 
-/*
- * The stir: stars respond to pointer movement, never to where it rests.
- * A moving pointer drags nearby stars along its path with a slight curl and
- * leaves a wake that eases back; a tap sends a soft ring outward. The total
- * displacement is capped so repeated input can only ever shimmer.
- */
-// WebGL 1 has no built-in tanh.
-float softSat(float x) {
-  float e = exp(-2.0 * abs(x));
-  return sign(x) * (1.0 - e) / (1.0 + e);
-}
-
-vec2 stir(vec2 px) {
-  vec2 disp = vec2(0.0);
-  float reach = 150.0 * u_dpr;
-  for (int i = 0; i < ${IMPULSES}; i++) {
-    vec2 meta = u_impMeta[i];
-    float age = meta.x;
-    if (age < 0.0) continue;
-    vec4 im = u_imp[i];
-    vec2 d = px - im.xy;
-    float r2 = dot(d, d);
-    if (meta.y < 0.5) {
-      // Follower: its drag vector already carries speed, shaping and weight.
-      float fall = exp(-r2 / (reach * reach));
-      if (fall < 0.005) continue;
-      float len = max(sqrt(r2), 1.0);
-      vec2 curl = vec2(-d.y, d.x) / len * length(im.zw) * 0.35;
-      disp += (im.zw + curl) * fall;
-    } else {
-      // Tap ripple: a ring that eases in, travels outward and fades.
-      if (age > 0.9) continue;
-      float dist = sqrt(r2);
-      float front = age * 240.0 * u_dpr;
-      float band = 38.0 * u_dpr;
-      float ring = exp(-((dist - front) * (dist - front)) / (band * band));
-      float life = smoothstep(0.0, 0.12, age) * (1.0 - smoothstep(0.35, 0.9, age));
-      disp += (d / max(dist, 1.0)) * ring * life * im.z * 6.0 * u_dpr;
-    }
-  }
-  // Soft ceiling: approaches ~15 CSS px smoothly instead of clipping.
-  float cap = 15.0 * u_dpr;
-  float m = length(disp);
-  return m > 0.0001 ? disp * (cap * softSat(m / cap) / m) : disp;
-}
-
 void main() {
   v_kind = a_kind;
 
@@ -122,8 +66,6 @@ void main() {
     vec2 p = a_seed.xy * u_res;
     // A very slow drift so the backdrop is never frozen, stronger during warp.
     p += (a_seed.xy - 0.5) * u_res * u_warp * u_warp * 0.35;
-    // The backdrop sits farther away: it answers the stir faintly.
-    if (u_pass == ${PASS_FIELD}) p += stir(p) * 0.35;
     gl_Position = vec4(p / u_res * 2.0 - 1.0, 0.0, 1.0);
     gl_Position.y = -gl_Position.y;
     float twinkle = 0.82 + 0.18 * sin(u_time * (0.6 + a_seed.w * 1.4) + a_seed.z * 40.0);
@@ -171,16 +113,23 @@ void main() {
   if (a_kind > 1.5 && a_kind < 2.5) h *= 3.5;
   vec3 p3 = vec3(cos(theta) * r, sin(theta) * r, h);
 
-  // Incline the disk toward the viewer, then orient it on screen.
+  // The visitor's hand turns the disk on its own axes first, like tipping a
+  // plate: a sideways drag swings it edge-on, a vertical one tips it flat.
+  vec3 q = p3;
+  float cp = cos(u_pitch), sp = sin(u_pitch);
+  q = vec3(q.x, q.y * cp - q.z * sp, q.y * sp + q.z * cp);
+  float cyw = cos(u_yaw), syw = sin(u_yaw);
+  q = vec3(q.x * cyw + q.z * syw, q.y, -q.x * syw + q.z * cyw);
+  // Then incline the disk toward the viewer and orient it on screen.
   float ct = cos(u_tilt), st = sin(u_tilt);
-  vec2 p2 = vec2(p3.x, p3.y * ct - p3.z * st);
+  q = vec3(q.x, q.y * ct - q.z * st, q.y * st + q.z * ct);
   float ca = cos(u_angle), sa = sin(u_angle);
-  p2 = vec2(p2.x * ca - p2.y * sa, p2.x * sa + p2.y * ca);
+  q = vec3(q.x * ca - q.y * sa, q.x * sa + q.y * ca, q.z);
+  // Slight perspective so the turned disk reads as an object, not a squash.
+  vec2 p2 = q.xy / (1.0 + q.z * 0.28);
 
   float scale = u_scale * (1.0 + u_warp * u_warp * 0.9);
   vec2 px = u_center + p2 * scale;
-
-  px += stir(px);
 
   gl_Position = vec4(px / u_res * 2.0 - 1.0, 0.0, 1.0);
   gl_Position.y = -gl_Position.y;
@@ -557,8 +506,8 @@ export function startGalaxy(
     center: u('u_center'),
     scale: u('u_scale'),
     alpha: u('u_alpha'),
-    imp: u('u_imp'),
-    impMeta: u('u_impMeta'),
+    yaw: u('u_yaw'),
+    pitch: u('u_pitch'),
     warp: u('u_warp'),
   };
   const quadPos = gl.getAttribLocation(quad, 'a_pos');
@@ -624,18 +573,20 @@ export function startGalaxy(
   let dpr = 1;
   let W = 0;
   let H = 0;
-  // Raw pointer, and a chain of followers that trail it with increasing lag:
-  // the first tracks closely, the last lazily, so their motion forms a wake.
-  const pointer = { x: 0, y: 0, active: false, seen: false };
-  const LAG = [0.07, 0.16, 0.3, 0.5]; // seconds
-  const WEIGHT = [0.55, 0.8, 0.9, 0.75];
-  const followers = LAG.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
-  const impData = new Float32Array(IMPULSES * 4);
-  const impMeta = new Float32Array(IMPULSES * 2).fill(-1);
-  const rippleBorn = new Float64Array(RIPPLES).fill(-1e9);
-  let rippleNext = 0;
-  // Tap ripples draw from a shared budget that refills over ~0.9s.
-  let rippleEnergy = 1;
+  /*
+   * Orientation spring. The disk's yaw and pitch are pulled back to rest by a
+   * slightly under-damped spring (settles in under a second, with a soft
+   * toss); pointer motion adds angular velocity, a finger drag moves the
+   * spring's target. Everything is integrated per frame, so it cannot step.
+   */
+  const orient = { yaw: 0, pitch: 0, vy: 0, vp: 0, ty: 0, tp: 0 };
+  const SPRING = 38; // stiffness (1/s^2)
+  const DAMP = 2 * Math.sqrt(SPRING) * 0.72; // just under critical
+  const MAX_YAW = 1.2;
+  const MAX_PITCH = 0.7;
+  const MAX_SPIN = 3; // rad/s
+  const mouse = { x: 0, y: 0, seen: false };
+  const drag = { active: false, id: -1, x0: 0, y0: 0, moved: false };
   let warp = 0;
   let warping = false;
   let time = 12; // start mid-rotation so the first frame is already composed
@@ -797,8 +748,9 @@ export function startGalaxy(
     gl!.uniform2f(U.res, W, H);
     gl!.uniform1f(U.dpr, dpr);
     gl!.uniform1f(U.time, time);
-    gl!.uniform4fv(U.imp, impData);
-    gl!.uniform2fv(U.impMeta, impMeta);
+    // Soft limits on what is shown: the disk tips far, but never flips.
+    gl!.uniform1f(U.yaw, MAX_YAW * Math.tanh(orient.yaw / MAX_YAW));
+    gl!.uniform1f(U.pitch, MAX_PITCH * Math.tanh(orient.pitch / MAX_PITCH));
     gl!.uniform1f(U.warp, warp);
     gl!.uniform1f(headroomLoc, headroom);
   }
@@ -816,51 +768,30 @@ export function startGalaxy(
     }
   }
 
-  function clearImpulses() {
-    rippleBorn.fill(-1e9);
-    for (const f of followers) f.vx = f.vy = 0;
-    impMeta.fill(-1);
+  function settleOrient() {
+    orient.ty = orient.tp = 0;
+    drag.active = false;
   }
 
-  function chainSpeed() {
-    return followers.reduce((m, f) => Math.max(m, Math.hypot(f.vx, f.vy)), 0);
+  function clampSpin() {
+    orient.vy = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, orient.vy));
+    orient.vp = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, orient.vp));
   }
 
-  /** Advance the follower chain and ripple ages; write the shader's inputs. */
-  function updateStir(now: number, dt: number, still: boolean) {
-    if (still || warping || !pointer.seen) {
-      impMeta.fill(-1);
+  /** Integrate the orientation spring toward its target (rest, or the finger). */
+  function updateOrient(dt: number, still: boolean) {
+    if (still) {
+      orient.yaw = orient.pitch = orient.vy = orient.vp = 0;
       return;
     }
-    rippleEnergy = Math.min(1, rippleEnergy + dt / 0.9);
-    let tx = pointer.x;
-    let ty = pointer.y;
-    followers.forEach((f, k) => {
-      const a = dt > 0 ? 1 - Math.exp(-dt / LAG[k]) : 0;
-      const nx = f.x + (tx - f.x) * a;
-      const ny = f.y + (ty - f.y) * a;
-      if (dt > 0) {
-        // Velocity is itself smoothed so uneven pointer events never pulse.
-        const b = 1 - Math.exp(-dt / 0.06);
-        f.vx += ((nx - f.x) / dt - f.vx) * b;
-        f.vy += ((ny - f.y) / dt - f.vy) * b;
-      }
-      f.x = nx;
-      f.y = ny;
-      // Drag grows with speed and saturates smoothly (about 6 CSS px each).
-      const speed = Math.hypot(f.vx, f.vy);
-      const mag = speed > 0.001 ? (6 * Math.tanh(speed / 900) * WEIGHT[k]) / speed : 0;
-      impData.set([f.x * dpr, f.y * dpr, f.vx * mag * dpr, f.vy * mag * dpr], k * 4);
-      impMeta[k * 2] = speed > 0.5 ? 0 : -1;
-      impMeta[k * 2 + 1] = 0;
-      tx = f.x;
-      ty = f.y;
-    });
-    for (let i = 0; i < RIPPLES; i++) {
-      const slot = FOLLOWERS + i;
-      const age = (now - rippleBorn[i]) / 1000;
-      impMeta[slot * 2] = age <= 0.9 ? age : -1;
-      impMeta[slot * 2 + 1] = 1;
+    // Sub-step so a long frame (30fps idle, a hitch) stays stable and smooth.
+    const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
+    const h = dt / steps;
+    for (let i = 0; i < steps; i++) {
+      orient.vy += (-SPRING * (orient.yaw - orient.ty) - DAMP * orient.vy) * h;
+      orient.vp += (-SPRING * (orient.pitch - orient.tp) - DAMP * orient.vp) * h;
+      orient.yaw += orient.vy * h;
+      orient.pitch += orient.vp * h;
     }
   }
 
@@ -883,7 +814,7 @@ export function startGalaxy(
     drawn++;
     if (!still) time += dt * (1 + warp * warp * 40);
 
-    updateStir(now, dt, still);
+    updateOrient(dt, still);
 
     // During the warp the previous frame persists as a trail instead of clearing.
     const fade = warping ? Math.max(0.05, 1 - warp * 1.4) : 1;
@@ -970,48 +901,65 @@ export function startGalaxy(
   resize();
 
   const onMove = (e: PointerEvent) => {
-    pointer.x = e.clientX;
-    pointer.y = e.clientY;
-    // First contact (or contact after the wake has settled): start the chain
-    // here, so nothing streaks in from the previous spot.
-    if (!pointer.seen || (!pointer.active && chainSpeed() < 60)) {
-      for (const f of followers) {
-        f.x = e.clientX;
-        f.y = e.clientY;
-        f.vx = f.vy = 0;
-      }
-    }
-    pointer.active = true;
-    pointer.seen = true;
     lastInput = performance.now();
+    if (reduceMotion.matches || warping) return;
+    if (e.pointerType === 'mouse') {
+      // Mouse motion gives the disk a gentle push in the direction of travel.
+      if (mouse.seen) {
+        const dx = Math.max(-60, Math.min(60, e.clientX - mouse.x));
+        const dy = Math.max(-60, Math.min(60, e.clientY - mouse.y));
+        orient.vy += dx * 0.012;
+        orient.vp += dy * 0.009;
+        clampSpin();
+      }
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      mouse.seen = true;
+    } else if (drag.active && e.pointerId === drag.id) {
+      // A finger turns the disk directly, like tipping a plate; it follows
+      // the finger through the spring, so it never snaps.
+      const dx = e.clientX - drag.x0;
+      const dy = e.clientY - drag.y0;
+      if (Math.hypot(dx, dy) > 6) drag.moved = true;
+      orient.ty = dx * 0.0085;
+      orient.tp = dy * 0.006;
+    }
     schedule();
   };
   const onDown = (e: PointerEvent) => {
-    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
-      pointer.active = false;
-      onMove(e);
-      if (!reduceMotion.matches && !warping) {
-        const strength = Math.min(1, rippleEnergy);
-        rippleEnergy = Math.max(0, rippleEnergy - 0.35);
-        if (strength > 0.05) {
-          const i = rippleNext;
-          rippleNext = (rippleNext + 1) % RIPPLES;
-          impData.set([e.clientX * dpr, e.clientY * dpr, strength, 0], (FOLLOWERS + i) * 4);
-          rippleBorn[i] = performance.now();
-        }
-      }
-    } else {
-      onMove(e);
-    }
+    lastInput = performance.now();
+    if (reduceMotion.matches || warping || e.pointerType === 'mouse') return;
+    drag.active = true;
+    drag.id = e.pointerId;
+    drag.x0 = e.clientX;
+    drag.y0 = e.clientY;
+    drag.moved = false;
+    schedule();
   };
-  // Lifting or leaving only stops new input; the chain settles on its own.
+  const onUp = (e: PointerEvent) => {
+    if (!drag.active || e.pointerId !== drag.id) return;
+    if (!drag.moved && !reduceMotion.matches && !warping) {
+      // A tap nudges the disk toward where it landed, then it settles.
+      const nx = e.clientX / window.innerWidth - 0.5;
+      const ny = e.clientY / window.innerHeight - 0.5;
+      orient.vy += nx * 1.1;
+      orient.vp += ny * 0.8;
+      clampSpin();
+    }
+    settleOrient();
+    lastInput = performance.now();
+    schedule();
+  };
+  // Leaving, cancelling (the page started scrolling) or blurring lets the
+  // disk spring back to rest.
   const release = () => {
-    pointer.active = false;
+    settleOrient();
+    mouse.seen = false;
   };
   const passive = { passive: true, signal };
   window.addEventListener('pointermove', onMove, passive);
   window.addEventListener('pointerdown', onDown, passive);
-  window.addEventListener('pointerup', (e) => e.pointerType === 'touch' && release(), passive);
+  window.addEventListener('pointerup', onUp, passive);
   window.addEventListener('pointercancel', release, passive);
   document.documentElement.addEventListener('pointerleave', release, { signal });
   window.addEventListener('blur', release, { signal });
@@ -1061,7 +1009,7 @@ export function startGalaxy(
     warp(durationMs: number) {
       if (dead || reduceMotion.matches) return Promise.resolve();
       warping = true;
-      clearImpulses();
+      settleOrient();
       const start = performance.now();
       schedule();
       return new Promise((resolve) => {

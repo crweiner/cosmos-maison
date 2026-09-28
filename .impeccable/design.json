@@ -294,9 +294,9 @@
         "purpose": "Shutter-open warp: the frame stops clearing, rotation accelerates, stars trail and the tone-map exposure rises until the plate burns out to light (no CSS wash). Page and chrome blur out over 500ms; the warp status fades in over 500ms after 250ms. Departure is guaranteed by 2200ms. Skipped under reduced motion."
       },
       {
-        "name": "pointer-stir",
-        "value": "~150 CSS px reach, 15 CSS px cap, ~1s settle",
-        "purpose": "Stars respond to pointer and touch movement, never to a resting pointer. A chain of four smoothed followers (0.07/0.16/0.3/0.5s lag) trails the pointer; each drags nearby stars by its own smoothed speed (saturating, ~6 CSS px) with a slight curl, so the wake flows continuously and settles as the chain catches up. Nothing is emitted or removed in steps (a discrete-impulse version shook at ~12Hz). Taps send a ring that eases in and fades within 0.9s, from a shared energy budget. Total displacement soft-capped near 15 CSS px. Off under reduced motion."
+        "name": "disk-turn",
+        "value": "yaw up to ~69°, pitch up to ~40°, settles < 1s",
+        "purpose": "The whole galaxy is a disk the visitor tips in 3D, applied in the disk's own frame before its base inclination: a sideways finger drag drives yaw directly (0.0085 rad/px), mouse movement adds angular velocity, a tap nudges toward the tap. A slightly under-damped spring (k=38, zeta 0.72, sub-stepped per frame) returns it to rest; soft limits apply only to the displayed angle. Page keeps vertical scroll and pinch-zoom (touch-action: pan-y pinch-zoom). Off under reduced motion."
       },
       {
         "name": "rotation",
