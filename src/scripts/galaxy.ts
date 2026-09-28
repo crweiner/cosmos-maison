@@ -20,6 +20,10 @@ const PASS_STARS = 2;
 const PASS_FIELD = 3;
 const PASS_SPIKES = 4;
 
+/** Pointer impulses the shader remembers: wake points plus tap ripples. */
+const IMPULSES = 16;
+const WAKE_SLOTS = 12;
+
 const VERT = /* glsl */ `
 precision highp float;
 precision highp int;
@@ -39,8 +43,11 @@ uniform float u_warmth;
 uniform vec2 u_center;
 uniform float u_scale;
 uniform float u_alpha;
-uniform vec2 u_pointer;
-uniform float u_pull;
+// Recent pointer impulses in device px: xy = position, zw = drag vector
+// (unit direction x strength) for a wake, or (strength, 0) for a tap ripple.
+uniform vec4 u_imp[${IMPULSES}];
+// x = age in seconds (negative = empty slot), y = kind (0 wake, 1 ripple).
+uniform vec2 u_impMeta[${IMPULSES}];
 uniform float u_warp;
 uniform float u_headroom;
 uniform float u_pointScale;
@@ -56,6 +63,44 @@ const vec3 RUST = vec3(0.78, 0.30, 0.22);
 const vec3 WHITE = vec3(0.96, 0.94, 0.90);
 const vec3 BLUEWHITE = vec3(0.78, 0.90, 0.98);
 
+/*
+ * The stir: stars respond to pointer movement, never to where it rests.
+ * A moving pointer drags nearby stars along its path with a slight curl and
+ * leaves a wake that eases back; a tap sends a soft ring outward. The total
+ * displacement is capped so repeated input can only ever shimmer.
+ */
+vec2 stir(vec2 px) {
+  vec2 disp = vec2(0.0);
+  float reach = 150.0 * u_dpr;
+  for (int i = 0; i < ${IMPULSES}; i++) {
+    vec2 meta = u_impMeta[i];
+    float age = meta.x;
+    if (age < 0.0 || age > 1.6) continue;
+    vec4 im = u_imp[i];
+    vec2 d = px - im.xy;
+    float r2 = dot(d, d);
+    if (meta.y < 0.5) {
+      float fall = exp(-r2 / (reach * reach));
+      if (fall < 0.01) continue;
+      // Full drag at once, then an exponential settle (~1s to rest).
+      float life = exp(-age * 3.4);
+      float len = max(sqrt(r2), 1.0);
+      vec2 curl = vec2(-d.y, d.x) / len * length(im.zw) * 0.35;
+      disp += (im.zw + curl) * fall * life * 7.0 * u_dpr;
+    } else {
+      float dist = sqrt(r2);
+      float front = age * 240.0 * u_dpr;
+      float band = 38.0 * u_dpr;
+      float ring = exp(-((dist - front) * (dist - front)) / (band * band));
+      float life = 1.0 - smoothstep(0.0, 0.8, age);
+      disp += (d / max(dist, 1.0)) * ring * life * im.z * 6.0 * u_dpr;
+    }
+  }
+  float cap = 15.0 * u_dpr;
+  float m = length(disp);
+  return m > cap ? disp * (cap / m) : disp;
+}
+
 void main() {
   v_kind = a_kind;
 
@@ -64,8 +109,8 @@ void main() {
     vec2 p = a_seed.xy * u_res;
     // A very slow drift so the backdrop is never frozen, stronger during warp.
     p += (a_seed.xy - 0.5) * u_res * u_warp * u_warp * 0.35;
-    vec2 d = u_pointer - p;
-    p += d * 0.06 * u_pull * exp(-dot(d, d) / (220.0 * 220.0 * u_dpr * u_dpr));
+    // The backdrop sits farther away: it answers the stir faintly.
+    if (u_pass == ${PASS_FIELD}) p += stir(p) * 0.35;
     gl_Position = vec4(p / u_res * 2.0 - 1.0, 0.0, 1.0);
     gl_Position.y = -gl_Position.y;
     float twinkle = 0.82 + 0.18 * sin(u_time * (0.6 + a_seed.w * 1.4) + a_seed.z * 40.0);
@@ -122,10 +167,7 @@ void main() {
   float scale = u_scale * (1.0 + u_warp * u_warp * 0.9);
   vec2 px = u_center + p2 * scale;
 
-  // Pointer gravity: a soft pull that falls off over ~160 CSS px.
-  vec2 d = u_pointer - px;
-  float sigma = 160.0 * u_dpr;
-  px += d * 0.22 * u_pull * exp(-dot(d, d) / (sigma * sigma));
+  px += stir(px);
 
   gl_Position = vec4(px / u_res * 2.0 - 1.0, 0.0, 1.0);
   gl_Position.y = -gl_Position.y;
@@ -502,8 +544,8 @@ export function startGalaxy(
     center: u('u_center'),
     scale: u('u_scale'),
     alpha: u('u_alpha'),
-    pointer: u('u_pointer'),
-    pull: u('u_pull'),
+    imp: u('u_imp'),
+    impMeta: u('u_impMeta'),
     warp: u('u_warp'),
   };
   const quadPos = gl.getAttribLocation(quad, 'a_pos');
@@ -569,9 +611,18 @@ export function startGalaxy(
   let dpr = 1;
   let W = 0;
   let H = 0;
-  const pointer = { x: -1e5, y: -1e5 };
-  let pull = 0;
-  let pullTarget = 0;
+  // Raw pointer, and a smoothed follower (~0.1s lag) that the stir reads, so
+  // jitter or a sudden jump never snaps the stars.
+  const pointer = { x: 0, y: 0, active: false };
+  const follow = { x: 0, y: 0, vx: 0, vy: 0 };
+  const impData = new Float32Array(IMPULSES * 4);
+  const impMeta = new Float32Array(IMPULSES * 2);
+  const impBorn = new Float64Array(IMPULSES).fill(-1e9);
+  let wakeNext = 0;
+  let rippleNext = WAKE_SLOTS;
+  let lastWake = 0;
+  // Tap ripples draw from a shared budget that refills over ~0.9s.
+  let rippleEnergy = 1;
   let warp = 0;
   let warping = false;
   let time = 12; // start mid-rotation so the first frame is already composed
@@ -733,8 +784,8 @@ export function startGalaxy(
     gl!.uniform2f(U.res, W, H);
     gl!.uniform1f(U.dpr, dpr);
     gl!.uniform1f(U.time, time);
-    gl!.uniform2f(U.pointer, pointer.x * dpr, pointer.y * dpr);
-    gl!.uniform1f(U.pull, pull);
+    gl!.uniform4fv(U.imp, impData);
+    gl!.uniform2fv(U.impMeta, impMeta);
     gl!.uniform1f(U.warp, warp);
     gl!.uniform1f(headroomLoc, headroom);
   }
@@ -749,6 +800,48 @@ export function startGalaxy(
       slowFrames = 0;
       frameEma = 16.7;
       resize();
+    }
+  }
+
+  function pushImpulse(slot: number, x: number, y: number, zx: number, zy: number, kind: number, now: number) {
+    impData.set([x * dpr, y * dpr, zx, zy], slot * 4);
+    impMeta[slot * 2 + 1] = kind;
+    impBorn[slot] = now;
+  }
+
+  function clearImpulses() {
+    impBorn.fill(-1e9);
+    for (let i = 0; i < IMPULSES; i++) impMeta[i * 2] = -1;
+  }
+
+  /** Ease the follower toward the pointer, lay wake points while it moves, age everything. */
+  function updateStir(now: number, dt: number, still: boolean) {
+    if (still || warping) {
+      clearImpulses();
+      return;
+    }
+    rippleEnergy = Math.min(1, rippleEnergy + dt / 0.9);
+    if (pointer.active && dt > 0) {
+      const k = 1 - Math.exp(-dt / 0.1);
+      const nx = follow.x + (pointer.x - follow.x) * k;
+      const ny = follow.y + (pointer.y - follow.y) * k;
+      const vx = (nx - follow.x) / dt;
+      const vy = (ny - follow.y) / dt;
+      follow.vx += (vx - follow.vx) * 0.4;
+      follow.vy += (vy - follow.vy) * 0.4;
+      follow.x = nx;
+      follow.y = ny;
+      const speed = Math.hypot(follow.vx, follow.vy);
+      if (speed > 40 && now - lastWake > 80) {
+        const strength = Math.min(1, Math.max(0.2, speed / 1000));
+        pushImpulse(wakeNext, follow.x, follow.y, (follow.vx / speed) * strength, (follow.vy / speed) * strength, 0, now);
+        wakeNext = (wakeNext + 1) % WAKE_SLOTS;
+        lastWake = now;
+      }
+    }
+    for (let i = 0; i < IMPULSES; i++) {
+      const age = (now - impBorn[i]) / 1000;
+      impMeta[i * 2] = age <= 1.6 ? age : -1;
     }
   }
 
@@ -771,8 +864,7 @@ export function startGalaxy(
     drawn++;
     if (!still) time += dt * (1 + warp * warp * 40);
 
-    pull += (pullTarget - pull) * Math.min(1, dt * (pullTarget > pull ? 3 : 1.2));
-    if (still) pull = 0;
+    updateStir(now, dt, still);
 
     // During the warp the previous frame persists as a trail instead of clearing.
     const fade = warping ? Math.max(0.05, 1 - warp * 1.4) : 1;
@@ -858,19 +950,43 @@ export function startGalaxy(
   ro.observe(canvas);
   resize();
 
-  const onPointer = (e: PointerEvent) => {
+  const onMove = (e: PointerEvent) => {
     pointer.x = e.clientX;
     pointer.y = e.clientY;
-    pullTarget = e.pointerType === 'touch' ? 1.3 : 1;
+    if (!pointer.active) {
+      // First contact: start the follower here, with no streak from elsewhere.
+      follow.x = e.clientX;
+      follow.y = e.clientY;
+      follow.vx = follow.vy = 0;
+      pointer.active = true;
+    }
     lastInput = performance.now();
     schedule();
   };
+  const onDown = (e: PointerEvent) => {
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      // A new touch begins where the finger lands, never swept from the last one.
+      pointer.active = false;
+      onMove(e);
+      if (!reduceMotion.matches && !warping) {
+        const strength = Math.min(1, rippleEnergy);
+        rippleEnergy = Math.max(0, rippleEnergy - 0.35);
+        if (strength > 0.05) {
+          pushImpulse(rippleNext, e.clientX, e.clientY, strength, 0, 1, performance.now());
+          rippleNext = rippleNext + 1 >= IMPULSES ? WAKE_SLOTS : rippleNext + 1;
+        }
+      }
+    } else {
+      onMove(e);
+    }
+  };
   const release = () => {
-    pullTarget = 0;
+    pointer.active = false;
+    follow.vx = follow.vy = 0;
   };
   const passive = { passive: true, signal };
-  window.addEventListener('pointermove', onPointer, passive);
-  window.addEventListener('pointerdown', onPointer, passive);
+  window.addEventListener('pointermove', onMove, passive);
+  window.addEventListener('pointerdown', onDown, passive);
   window.addEventListener('pointerup', (e) => e.pointerType === 'touch' && release(), passive);
   window.addEventListener('pointercancel', release, passive);
   document.documentElement.addEventListener('pointerleave', release, { signal });
@@ -921,7 +1037,7 @@ export function startGalaxy(
     warp(durationMs: number) {
       if (dead || reduceMotion.matches) return Promise.resolve();
       warping = true;
-      pullTarget = 0;
+      clearImpulses();
       const start = performance.now();
       schedule();
       return new Promise((resolve) => {

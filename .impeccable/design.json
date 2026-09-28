@@ -294,9 +294,9 @@
         "purpose": "Shutter-open warp: the frame stops clearing, rotation accelerates, stars trail and the tone-map exposure rises until the plate burns out to light (no CSS wash). Page and chrome blur out over 500ms; the warp status fades in over 500ms after 250ms. Departure is guaranteed by 2200ms. Skipped under reduced motion."
       },
       {
-        "name": "pointer-gravity",
-        "value": "~160 CSS px falloff",
-        "purpose": "Stars near the pointer or touch lean toward it and settle back."
+        "name": "pointer-stir",
+        "value": "~150 CSS px reach, 15 CSS px cap, ~1s settle",
+        "purpose": "Stars respond to pointer and touch movement, never to a resting pointer: a smoothed follower (~0.1s lag) lays wake points while moving; nearby stars drag along the path with a slight curl and ease back over ~1s. Taps send a soft ring (fades in ~0.8s) from a shared energy budget so rapid taps only shimmer. Off under reduced motion."
       },
       {
         "name": "rotation",

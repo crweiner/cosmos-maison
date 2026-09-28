@@ -118,7 +118,7 @@ Every surface is an astronomical observation plate: narrowband false-color light
 
 The type does the work that chrome would do elsewhere. A wide, light futuristic display face states the title; a quiet humanist sans sets verse, body and the uppercase caption annotations. Controls are plate labels: flat rectangles with a 2px corner, either a solid gold label or a hairline outline, never pills. Nothing floats on a card, a glass panel or a glow. Text sits directly on the sky and earns legibility from a soft void-colored shadow and from being placed where the galaxy leaves the frame empty.
 
-Motion is astronomical, not decorative: slow rotation with trailing arms, scroll-driven crossfades between galaxies, stars that lean toward the pointer and settle, and one exposure-style warp in which the frame stops clearing, stars stretch into long-exposure trails and the plate burns out to light. Everything reduces to a still, composed plate under `prefers-reduced-motion`, and the still plate is always there to fall back to.
+Motion is astronomical, not decorative: slow rotation with trailing arms, scroll-driven crossfades between galaxies, stars stirred by pointer and touch movement (never by a resting pointer), leaving a wake that settles, and one exposure-style warp in which the frame stops clearing, stars stretch into long-exposure trails and the plate burns out to light. Everything reduces to a still, composed plate under `prefers-reduced-motion`, and the still plate is always there to fall back to.
 
 **Key Characteristics:**
 - Void ground, two narrowband light colors, rust held back for dust.
