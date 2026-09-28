@@ -198,15 +198,19 @@ const first = brands[0];
         const el = entry.target as HTMLElement;
         if (el === hero) {
           root.classList.toggle('at-top', entry.isIntersecting);
+          if (entry.isIntersecting) root.classList.remove('plate-mirror');
           continue;
         }
         if (el === closing) {
           root.classList.toggle('at-close', entry.isIntersecting);
+          if (entry.isIntersecting) root.classList.remove('plate-mirror');
           continue;
         }
         const link = links.get(el.id);
         if (!link) continue;
         if (entry.isIntersecting) {
+          // Only seen without the live sky: mirror the still plate to this stop's side.
+          root.classList.toggle('plate-mirror', el.classList.contains('stop--right'));
           links.forEach((l) => l.removeAttribute('aria-current'));
           link.setAttribute('aria-current', 'location');
         } else if (link.getAttribute('aria-current')) {

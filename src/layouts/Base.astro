@@ -37,11 +37,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:image" content={new URL('/plate.webp', Astro.site)} />
     <meta name="twitter:card" content="summary_large_image" />
     {sky === 'plate' && <link rel="preload" href="/plate.webp" as="image" fetchpriority="high" />}
-    {sky === 'live' && (
-      <noscript>
-        <style>{`.sky-fallback, .grain { display: block; } .sky-fallback { background-image: url('/plate.webp'); }`}</style>
-      </noscript>
-    )}
+    {/* Mark scripting before first paint, so a visit without it gets the still plate (global.css). */}
+    <script is:inline>document.documentElement.classList.add('js');</script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

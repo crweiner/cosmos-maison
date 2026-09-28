@@ -219,4 +219,26 @@ const logoH = 48;
       padding-right: 0;
     }
   }
+
+  /*
+   * No scripting: one fixed plate, core upper right, for every stop. Side by
+   * side, right-hand plates move to the left so no copy sits on that core.
+   */
+  @media (min-width: 760px) and (orientation: landscape), (min-width: 1100px) {
+    :global(html:not(.js)) .stop--right .stop__plate {
+      grid-column: 2 / span 5;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    :global(html:not(.js)) .stop--right .stop__plate::before {
+      left: 0;
+    }
+  }
+
+  @media (min-width: 760px) and (max-width: 1099px) and (orientation: landscape) {
+    :global(html:not(.js)) .stop--right .stop__plate {
+      grid-column: 1 / span 6;
+    }
+  }
 </style>
