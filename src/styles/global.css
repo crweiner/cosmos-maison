@@ -328,8 +328,17 @@ html:not(.js) .grain {
   color: var(--starlight);
 }
 
+/* The icon nudges the way it points. */
 .btn--explore:hover svg {
   transform: translateY(3px);
+}
+
+.btn--explore:hover svg[data-icon='up'] {
+  transform: translateY(-3px);
+}
+
+.btn--explore:hover svg[data-icon='back'] {
+  transform: translateX(-3px);
 }
 
 @media (max-width: 420px) {
