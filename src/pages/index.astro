@@ -3,9 +3,11 @@ import Base from '../layouts/Base.astro';
 import BrandStop from '../components/BrandStop.astro';
 import StopIndex from '../components/StopIndex.astro';
 import Icon from '../components/Icon.astro';
-import { brands, heroGalaxy, trackedTargets } from '../data/brands';
+import { brands, heroGalaxy, referral, trackedTargets } from '../data/brands';
 
 const first = brands[0];
+/** The WordPress side of Automattic: a forest to this galaxy. */
+const sister = referral('https://ecosystem.maison/', 'colophon');
 ---
 
 <Base
@@ -59,7 +61,7 @@ const first = brands[0];
   <p class="plate-id caption" aria-hidden="true"><span data-plate-id>Plate 1 / {brands.length}</span></p>
 
   <footer class="colophon">
-    <p class="caption">cosmos.maison · A constellation of brands from Automattic</p>
+    <p class="caption">cosmos.maison · A constellation of brands from Automattic · Sister site: <a href={sister}>ecosystem.maison</a></p>
   </footer>
 
   <p slot="overlay" class="warp-status" role="status" aria-live="polite"></p>
@@ -369,6 +371,23 @@ const first = brands[0];
     text-shadow: var(--scrim-text);
     color: var(--ink-soft);
     letter-spacing: 0.06em;
+    text-wrap: balance;
+  }
+
+  /* Lit like the brand links; the underline marks it as a link inside the sentence. */
+  .colophon a {
+    color: var(--gold-bright);
+    text-decoration: underline 1px;
+    text-decoration-color: var(--ink-edge);
+    text-underline-offset: 0.3em;
+    transition:
+      color 240ms var(--ease-out),
+      text-decoration-color 240ms var(--ease-out);
+  }
+
+  .colophon a:hover {
+    color: var(--starlight);
+    text-decoration-color: currentColor;
   }
 
   /* ---- Warp ------------------------------------------------------------ */
