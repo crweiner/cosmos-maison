@@ -17,6 +17,7 @@ interface Props {
 
 const { title, description, sky = 'plate', noindex = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const shareAlt = 'A spiral galaxy with a warm gold core and teal arms on a dark field of stars.';
 ---
 
 <!doctype html>
@@ -31,11 +32,18 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="theme-color" content="#04060b" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="cosmos.maison" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={new URL('/plate.webp', Astro.site)} />
+    {/* The share card: the plate cut to 1.91:1 as a JPEG, which every platform shows uncropped. */}
+    <meta property="og:image" content={new URL('/og.jpg', Astro.site)} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={shareAlt} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image:alt" content={shareAlt} />
     {sky === 'plate' && <link rel="preload" href="/plate.webp" as="image" fetchpriority="high" />}
     {/* Mark scripting before first paint, so a visit without it gets the still plate (global.css). */}
     <script is:inline>document.documentElement.classList.add('js');</script>
