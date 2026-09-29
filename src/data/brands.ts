@@ -123,7 +123,7 @@ export const heroGalaxy: GalaxyShape = {
 };
 
 /** Where a visitor left from, reported to the brand's analytics as utm_content. */
-export type ReferralPath = 'warp' | 'stop' | 'warp-link' | 'warp-list';
+export type ReferralPath = 'warp' | 'stop' | 'warp-link' | 'warp-list' | 'colophon';
 
 /** Tag an outbound link so the destination's logs credit cosmos.maison. */
 export function referral(url: string, path: ReferralPath): string {
